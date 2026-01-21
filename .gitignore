@@ -27,3 +27,4 @@ dist-ssr
 *.sw?
 
 examples/**/locale
+examples/**/i18n.config.mjs
