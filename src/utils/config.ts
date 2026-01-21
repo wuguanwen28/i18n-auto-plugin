@@ -1,0 +1,31 @@
+import { I18nConfig } from '../types'
+
+export const DEFAULT_EXCLUDE_CALL = [
+  'i18n',
+  'console.log',
+  '_createCommentVNode',
+]
+
+export const DEFAULT_CONFIG_PATH = 'i18n.config.mjs'
+
+export const DEFAULT_CONFIG: I18nConfig = {
+  cache: true,
+  logger: 'info',
+  entry: './src',
+  output: './src/locale/index.json',
+  test: '.*(js|jsx|ts|tsx|vue)$',
+  include: ['src'],
+  exclude: ['node_modules'],
+  excludeCall: ['i18n', 'console.log'],
+  originLang: 'zh-CN',
+  languages: ['en-US'],
+  translateService: 'baidu',
+  baidu: {
+    appId: '',
+    appKey: '',
+  },
+}
+
+export const ZH_EXT = /[\u4e00-\u9fa5]+/
+
+export const tplRegexp = /(?<!\\)\$\{([\s\S]+?)\}/g
