@@ -3,8 +3,6 @@ import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
 import { logger } from '../utils'
 
 export abstract class Translator {
-  /** 批量翻译个数 */
-  batchSize = 100
   config: Configuration
   languagesMap: LanguagesMap
 
@@ -51,6 +49,7 @@ export abstract class Translator {
 
   splitText(fromLang: LngType, toLang: LngType) {
     const result: Array<{ [id: string]: string }> = []
+    const { batchSize = 100 } = this.config
 
     let count = 0
     let langMap = {}
@@ -63,7 +62,7 @@ export abstract class Translator {
 
       count++
       langMap[id] = this.formatText(item[fromLang])
-      if (count >= this.batchSize) {
+      if (count >= batchSize) {
         result.push(langMap)
         langMap = {}
         count = 0

@@ -24,6 +24,7 @@ export const DEFAULT_CONFIG: I18nConfig = {
   originLang: 'zh-CN',
   languages: ['en-US'],
   translateService: 'baidu',
+  batchSize: 100,
   baidu: {
     appId: '',
     appKey: '',

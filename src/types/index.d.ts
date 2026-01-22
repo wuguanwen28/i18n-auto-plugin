@@ -112,6 +112,11 @@ export interface I18nConfig {
    */
   languages?: LngType[]
   /**
+   * 每次翻译的文本数量
+   * @default 100
+   */
+  batchSize?: number
+  /**
    * 翻译服务
    */
   translateService: TranslateServiceType
