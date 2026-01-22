@@ -3,37 +3,42 @@ import path from 'node:path'
 
 import {
   DEFAULT_CONFIG,
-  DEFAULT_CONFIG_PATH,
   DEFAULT_EXCLUDE_CALL,
   cacheManager,
   getConfiguration,
+  getExportPrefix,
   getHash,
   isAllowTranslate,
   logger,
+  mkdirSync,
   parseAst,
   prettierCode,
-  readFile,
+  resolveFile,
   resolveTraverse,
-  safeParseJson,
   scanFile,
   toArray,
   tplRegexp,
 } from '../utils'
 import translatorMap, { BaiduTranslator } from '../translators'
-import { Configuration, LanguagesMap, TranslateOptions } from '../types'
+import {
+  Configuration,
+  LanguagesMap,
+  LngType,
+  TranslateOptions,
+} from '../types'
 import chalk from 'chalk'
 
 const traverse = resolveTraverse()
 
 export class Translate {
-  configPath: string
+  customConfigPath?: string
 
   config!: Configuration
 
   languagesMap: LanguagesMap = {}
 
   constructor(options: TranslateOptions = {}) {
-    this.configPath = options.config || DEFAULT_CONFIG_PATH
+    this.customConfigPath = options.config
   }
 
   async run() {
@@ -50,32 +55,32 @@ export class Translate {
   }
 
   async initConfig() {
-    const filePath = path.resolve(process.cwd(), this.configPath)
-    const config = await getConfiguration(filePath)
+    const config = await getConfiguration(this.customConfigPath)
     if (!config) {
       logger.error(
         `配置文件不存在，请执行 ${chalk.bold.green('npx i18n init')} 初始化`,
       )
       process.exit(0)
     }
-    this.config = { ...DEFAULT_CONFIG, ...(config || {}) }
-    let { output, __rootPath } = this.config
-    if (!path.extname(output)) {
-      output = path.join(output, './index.json')
-      this.config.output = path.resolve(__rootPath, output)
-    }
+    this.config = { ...DEFAULT_CONFIG, ...config }
     logger.setLogLevel(this.config.logger)
   }
 
   /** 获取旧的语言映射 */
   async getOldLanguagesMap() {
-    const filePath = this.config.output
-    if (!fs.existsSync(filePath)) return
-    try {
-      const content = await readFile(filePath)
+    const outputMap = this.getOutputMap()
+    const mainPath = outputMap.main
+    if (mainPath && fs.existsSync(mainPath)) {
+      const content = await resolveFile(mainPath)
       this.languagesMap = content || {}
-    } catch (error) {
-      logger.error(error as Error)
+    } else {
+      for (const lng in outputMap) {
+        const filePath = outputMap[lng]
+        if (filePath && fs.existsSync(filePath)) {
+          const content = await resolveFile(filePath)
+          this.mergeLanguagesMap(content, lng as LngType)
+        }
+      }
     }
   }
 
@@ -145,19 +150,35 @@ export class Translate {
 
   /** 写入语言映射 */
   async writeLanguagesMap() {
-    const { output: filePath } = this.config
-    const dirname = path.dirname(filePath)
-    if (!fs.existsSync(dirname)) {
-      fs.mkdirSync(dirname, { recursive: true })
+    const outputMap = this.getOutputMap()
+    const { splitLngFile } = this.config.output
+
+    const writeFile = async (filepath: string, code: string) => {
+      mkdirSync(path.dirname(filepath))
+      const finalCode = getExportPrefix(filepath) + code
+      const content = await prettierCode(finalCode, { filepath })
+      fs.writeFileSync(filepath, content)
     }
 
     try {
-      let code = JSON.stringify(this.languagesMap, null, 2)
-      if (filePath.endsWith('.js') || filePath.endsWith('.ts')) {
-        code = `export default ${code}`
+      if (!splitLngFile && outputMap.main) {
+        const filePath = outputMap.main
+        const code = JSON.stringify(this.languagesMap, null, 2)
+        await writeFile(filePath, code)
+        return
       }
-      const content = await prettierCode(code, { filepath: filePath })
-      fs.writeFileSync(filePath, content)
+
+      if (splitLngFile) {
+        for (const lng in outputMap) {
+          const filePath = outputMap[lng]
+          const lngMap = Object.keys(this.languagesMap).reduce((prev, key) => {
+            prev[key] = this.languagesMap[key][lng] || ''
+            return prev
+          }, {})
+          const code = JSON.stringify(lngMap, null, 2)
+          await writeFile(filePath, code)
+        }
+      }
     } catch (error) {
       logger.error(error as Error)
     }
@@ -174,17 +195,48 @@ export class Translate {
   }
 
   /** 合并语言映射 */
-  mergeLanguagesMap(currentMap: LanguagesMap | null) {
+  mergeLanguagesMap(
+    currentMap: LanguagesMap | Record<string, string> | null,
+    key?: LngType,
+  ) {
     if (!currentMap) return
     for (const id in currentMap) {
-      if (this.languagesMap[id]) {
+      const item = currentMap[id]
+      this.languagesMap[id] ||= {}
+      if (typeof item === 'string') {
+        if (!key) throw new Error('key is required')
         this.languagesMap[id] = {
           ...this.languagesMap[id],
-          ...currentMap[id],
+          [key]: item,
         }
-      } else {
-        this.languagesMap[id] = currentMap[id]
+      } else if (typeof item === 'object') {
+        this.languagesMap[id] = {
+          ...this.languagesMap[id],
+          ...item,
+        }
       }
     }
+  }
+
+  getOutputMap() {
+    const { output, __rootPath, languages, originLang } = this.config
+    const { dir = DEFAULT_CONFIG.output.dir!, file, splitLngFile } = output
+
+    const result: { [key in LngType | 'main']?: string } = {}
+
+    if (!splitLngFile) {
+      const fileName = file || 'index.json'
+      result.main = path.resolve(__rootPath, dir, fileName)
+    } else {
+      let fileName = file || '[name].json'
+      if (!fileName.includes('[name]')) fileName = '[name].json'
+      for (const lng of [...languages, originLang]) {
+        const finalFileName = fileName.replace(/\[name\]/g, lng)
+        const filePath = path.resolve(__rootPath, dir, finalFileName)
+        result[lng] = filePath
+      }
+    }
+
+    return result
   }
 }

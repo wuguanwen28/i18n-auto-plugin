@@ -12,7 +12,11 @@ export const DEFAULT_CONFIG: I18nConfig = {
   cache: true,
   logger: 'info',
   entry: './src',
-  output: './src/locale/index.json',
+  output: {
+    dir: './src/locale',
+    file: 'index.json',
+    splitLngFile: false,
+  },
   test: '.*(js|jsx|ts|tsx|vue)$',
   include: ['src'],
   exclude: ['node_modules'],

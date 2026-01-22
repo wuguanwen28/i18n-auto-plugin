@@ -54,7 +54,24 @@ export interface I18nConfig {
   /**
    * 出口路径
    */
-  output: string
+  output: {
+    /**
+     * 输出目录
+     * @default './src/locale'
+     */
+    dir?: string
+    /**
+     * 输出文件名
+     * 当 splitLngFile 为 true 时, [name]为语种名称
+     * @default "index.json" | "[name].json"
+     */
+    file?: string
+    /**
+     * 是否将不同语种的翻译分别存储到不同的文件中
+     * @default false
+     */
+    splitLngFile?: boolean
+  }
   /**
    * 是否开启缓存，如文件没有变化，不会重复解析
    * @default true
