@@ -6,6 +6,7 @@
     "esModuleInterop": true,
     "strict": true,
     "noImplicitAny": false,
+    "noUnusedLocals": true,
     "sourceMap": false,
     "resolveJsonModule": true
   },

@@ -5,7 +5,6 @@ import prettier from 'prettier'
 import crypto from 'node:crypto'
 import { cosmiconfig } from 'cosmiconfig'
 import { Configuration } from '../types'
-import { DEFAULT_CONFIG_PATH } from './config'
 
 export * from './parse'
 export * from './ceche'
@@ -43,19 +42,18 @@ export const toArray = <T = any>(value?: T | T[]) => {
   return value ? [value] : []
 }
 
-export const readFile = async (filePath: string) => {
-  if (!fs.existsSync(filePath)) return
-  const filename = path.basename(filePath)
-  const dirname = path.dirname(filePath)
-  const explorer = cosmiconfig('', {
-    searchPlaces: [filename],
-  })
+export const resolveFile = async (filePath: string = '', name = '') => {
+  if (!fs.existsSync(filePath) && !name) return
 
-  const searchedFor = await explorer.search(dirname)
+  const rootPath = process.cwd()
+  const searchFrom = filePath ? path.dirname(filePath) : rootPath
+  const searchPlaces = filePath ? [path.basename(filePath)] : undefined
 
-  if (!searchedFor?.config) return null
+  const explorer = cosmiconfig(name, { searchPlaces })
+  const searchedRes = await explorer.search(searchFrom)
+  if (!searchedRes?.config) return null
 
-  let res = searchedFor.config
+  let res = searchedRes.config
   if (res.__esModule && res['default']) {
     return res['default']
   }
@@ -67,30 +65,10 @@ export const readFile = async (filePath: string) => {
 export const getConfiguration = async (
   filePath: string = '',
 ): Promise<Configuration | null> => {
-  const __rootPath = process.cwd()
-  const filename = path.basename(filePath)
-  const dirname = path.dirname(filePath) || __rootPath
-  const filenames = [filename].filter(
-    (item) => item && item !== DEFAULT_CONFIG_PATH,
-  )
-  const explorerSync = cosmiconfig('i18n', {
-    searchPlaces: filenames.length ? filenames : void 0,
-  })
-
-  const searchedFor = await explorerSync.search(dirname)
-  if (!searchedFor?.config) return null
-
-  let config = searchedFor.config as Configuration
-  // @ts-ignore
-  if (config.__esModule && config['default']) {
-    config = config['default']
-  }
-
-  if (typeof config.test === 'string') {
-    config.test = new RegExp(config.test)
-  }
-
-  config.__rootPath = __rootPath
+  const config = await resolveFile(filePath, 'i18n')
+  if (!config) return null
+  config.__rootPath = process.cwd()
+  config.test = new RegExp(config.test)
   config.include = toArray(config.include)
   config.exclude = toArray(config.exclude)
 
@@ -152,4 +130,16 @@ export function safeParseJson<T = any>(str: string, defaultValue?: T): T {
   } catch (error) {
     return defaultValue as T
   }
+}
+
+export function mkdirSync(dirname: string) {
+  if (dirname && !fs.existsSync(dirname)) {
+    fs.mkdirSync(dirname, { recursive: true })
+  }
+}
+
+export function getExportPrefix(filePath: string) {
+  if (filePath?.endsWith('.json')) return ''
+  if (filePath?.endsWith('.cjs')) return 'module.exports = '
+  return 'export default '
 }
