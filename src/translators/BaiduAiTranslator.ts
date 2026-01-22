@@ -1,20 +1,61 @@
-import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
-import { Translator } from './Translator'
+import {
+  BaiduAiTranslateServiceConfig,
+  Configuration,
+  LanguagesMap,
+  LngType,
+  TranslateParams,
+} from '../types'
+import { BaiduTranslator } from './BaiduTranslator'
 
-export class BaiduAiTranslator extends Translator {
-  constructor(options: {
-    languagesMap: LanguagesMap
-    config: Configuration
-    writeLanguagesMap: () => void
-  }) {
+export class BaiduAiTranslator extends BaiduTranslator {
+  name = '百度AI翻译'
+  url = 'https://fanyi-api.baidu.com/ait/api/aiTextTranslate'
+
+  // @ts-ignore
+  declare serverConfig: BaiduAiTranslateServiceConfig
+
+  constructor(options: { languagesMap: LanguagesMap; config: Configuration }) {
     super(options)
+    const { translateService, baiduAi } = options.config || {}
+    if (translateService === 'baiduAi') {
+      if (!baiduAi?.appId || (!baiduAi?.appKey && !baiduAi?.apiKey)) {
+        throw new Error(`请配置${this.name}的appId和appKey或apiKey`)
+      }
+      this.serverConfig = baiduAi
+    }
+
+    Object.assign(this.errorCodeMap, {
+      59002: ['翻译指令过长', 'reference参数超过500字符上限'],
+      59003: ['请求文本过长', 'q参数超过6000字符上限'],
+      59004: ['QPS超限', '当前接口QPS已触及上限'],
+      59005: ['tag_handling 参数非法', '确认参数为0或1'],
+      59006: ['标签解析失败', '标签未闭合或为空'],
+      59007: ['ignore_tags长度超限', '长度上限为20'],
+    })
   }
 
-  async requestTranslate(
+  async handleFetch(
     texts: TranslateParams,
     fromLang: LngType,
     toLang: LngType,
-  ): Promise<TranslateParams> {
-    return texts
+  ) {
+    const { appId, apiKey, appKey, ...otherParams } = this.serverConfig
+
+    if (!apiKey) return super.handleFetch(texts, fromLang, toLang)
+
+    return await fetch(this.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        ...otherParams,
+        appid: appId,
+        q: Object.values(texts).join('\n'),
+        to: this.lngTypeMap[toLang] || 'en',
+        from: this.lngTypeMap[fromLang] || 'auto',
+      }),
+    }).then((res) => res.json())
   }
 }

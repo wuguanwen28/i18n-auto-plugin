@@ -41,9 +41,59 @@ export type TranslateServiceConfig = {
    */
   appId: string
   /**
-   * 你申请的 appKey
+   * 你申请的密钥
    */
   appKey: string
+}
+
+/** 百度翻译服务配置 */
+export type BaiduTranslateServiceConfig = TranslateServiceConfig & {
+  /**
+   * 是否需要使用自定义术语干预API
+   * -仅开通了”我的术语库“用户生效
+   * 1-是，0-否
+   */
+  needIntervene?: 0 | 1
+}
+
+/** 百度大模型文本翻译配置 */
+export type BaiduAiTranslateServiceConfig = Omit<
+  BaiduTranslateServiceConfig,
+  'appKey'
+> & {
+  /**
+   * 你申请的 apiKey
+   * 大模型翻译接口支持 apiKey 鉴权
+   */
+  apiKey?: string
+  /**
+   * 密钥 sign鉴权需要
+   * - 使用API Key鉴权时不需要填写appKey
+   */
+  appKey?: string
+  /**
+   * 选择翻译模型
+   * - llm：大模型翻译（默认值）
+   * - nmt：机器翻译
+   */
+  model_type?: 'llm' | 'nmt'
+  /**
+   * 自定义翻译指令
+   * 可填写对翻译结果的要求，如“使用学术风格来翻译”
+   */
+  reference?: string
+  /**
+   * 标签保持功能
+   * - 开启后<>尖括号标签会在译文中保留
+   * - 1-开，0-关（默认值）；当前仅支持model_type = 'nmt'
+   */
+  tag_handling?: 0 | 1
+  /**
+   * 自定义标签间内容不翻译
+   * - 可传入最多20个标签，如：[‘name’, ‘address’]
+   * - 仅在 model_type = 'nmt'，且 tag_handling = 1 时生效
+   */
+  ignore_tags?: string[]
 }
 
 export interface I18nConfig {
@@ -123,11 +173,11 @@ export interface I18nConfig {
   /**
    * 百度通用文本翻译配置
    */
-  baidu?: TranslateServiceConfig
+  baidu?: BaiduTranslateServiceConfig
   /**
    * 百度大模型文本翻译配置
    */
-  baiduAi?: TranslateServiceConfig
+  baiduAi?: BaiduAiTranslateServiceConfig
   /**
    * 有道翻译配置
    */

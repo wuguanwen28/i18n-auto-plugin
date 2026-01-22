@@ -1,13 +1,22 @@
 import chalk from 'chalk'
-import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
+import {
+  BaiduAiTranslateServiceConfig,
+  BaiduTranslateServiceConfig,
+  Configuration,
+  LanguagesMap,
+  LngType,
+  TranslateParams,
+} from '../types'
 import { Translator } from './Translator'
 import crypto from 'node:crypto'
 
 export class BaiduTranslator extends Translator {
-  appId: string
-  appKey: string
+  name = '百度翻译'
+  url = 'http://api.fanyi.baidu.com/api/trans/vip/translate'
 
-  lngMap: Record<LngType, string> = {
+  serverConfig!: BaiduTranslateServiceConfig
+
+  lngTypeMap: Record<LngType, string> = {
     'zh-CN': 'zh',
     'zh-TW': 'cht',
     'en-US': 'en',
@@ -15,18 +24,15 @@ export class BaiduTranslator extends Translator {
     'ko-KR': 'kor',
   }
 
-  constructor(options: {
-    languagesMap: LanguagesMap
-    config: Configuration
-    writeLanguagesMap: () => void
-  }) {
+  constructor(options: { languagesMap: LanguagesMap; config: Configuration }) {
     super(options)
-    const { appId, appKey } = options?.config?.baidu || {}
-    if (!appId || !appKey) {
-      throw new Error('请配置百度翻译appId和appKey')
+    const { translateService, baidu } = options.config || {}
+    if (translateService === 'baidu') {
+      if (!baidu?.appId || !baidu?.appKey) {
+        throw new Error(`请配置${this.name}的appId和appKey`)
+      }
+      this.serverConfig = baidu
     }
-    this.appId = appId
-    this.appKey = appKey
   }
 
   async requestTranslate(
@@ -34,26 +40,7 @@ export class BaiduTranslator extends Translator {
     fromLang: LngType,
     toLang: LngType,
   ): Promise<TranslateParams> {
-    const textMapId: Record<string, string[]> = {}
-    for (let id in texts) {
-      let key = texts[id]
-      textMapId[key] ||= []
-      textMapId[key].push(id)
-    }
-
-    const salt = Date.now().toString()
-    const to = this.lngMap[toLang] || 'en'
-    const from = this.lngMap[fromLang] || 'auto'
-    const q = Object.values(texts).join('\n')
-    const buffer = Buffer.from(`${this.appId}${q}${salt}${this.appKey}`)
-    const sign = crypto.createHash('md5').update(buffer).digest('hex')
-    const url = 'http://api.fanyi.baidu.com/api/trans/vip/translate'
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ q, to, from, salt, sign, appid: this.appId }),
-    }).then((res) => res.json())
+    const res = await this.handleFetch(texts, fromLang, toLang)
 
     const { trans_result = [], error_code, error_msg, data = {} } = res || {}
 
@@ -65,12 +52,38 @@ export class BaiduTranslator extends Translator {
       }
       let [msg = error_msg, tip] = errorInfo || []
       tip = tip ? `${chalk.bold.yellow('Tip:')} ${tip}` : ''
-      throw new Error(`百度翻译错误：${msg}\n${tip}`)
+      throw new Error(`${this.name}错误：${msg}\n${tip}`)
+    }
+
+    const textMapId: Record<string, string[]> = {}
+    for (let id in texts) {
+      let key = texts[id]
+      textMapId[key] ||= []
+      textMapId[key].push(id)
+    }
+
+    // bugfix: 当开启标签保持功能时，\n会被保留下来，需要手动分割
+    const { tag_handling, model_type } = this
+      .serverConfig as BaiduAiTranslateServiceConfig
+    if (
+      tag_handling === 1 &&
+      model_type === 'nmt' &&
+      trans_result.length === 1
+    ) {
+      const srcs: string[] = trans_result[0].src.split('\n')
+      const dsts = trans_result[0].dst.split('\n')
+      srcs.forEach((src, index) =>
+        trans_result.push({
+          src,
+          dst: dsts[index] || '',
+        }),
+      )
     }
 
     return trans_result.reduce(
       (prev: Record<string, string>, cur: { src: string; dst: string }) => {
         const ids = textMapId[cur.src]
+        if (!ids?.length) return prev
         for (const id of ids) {
           prev[id] = cur.dst
         }
@@ -78,6 +91,37 @@ export class BaiduTranslator extends Translator {
       },
       {},
     )
+  }
+
+  async handleFetch(
+    texts: TranslateParams,
+    fromLang: LngType,
+    toLang: LngType,
+  ) {
+    const { appId, appKey, ...otherParams } = this.serverConfig
+
+    const salt = Date.now().toString()
+    const to = this.lngTypeMap[toLang] || 'en'
+    const from = this.lngTypeMap[fromLang] || 'auto'
+    const q = Object.values(texts).join('\n')
+    const buffer = Buffer.from(`${appId}${q}${salt}${appKey}`)
+    const sign = crypto.createHash('md5').update(buffer).digest('hex')
+
+    const body = new URLSearchParams({
+      ...(otherParams as any),
+      q,
+      to,
+      from,
+      salt,
+      sign,
+      appid: appId,
+    })
+
+    return await fetch(this.url, {
+      method: 'POST',
+      body: body,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    }).then((res) => res.json())
   }
 
   errorCodeMap = {
