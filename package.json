@@ -8,10 +8,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./vite": {
-      "import": "./dist/vite-plugin.js"
+      "import": "./dist/vite-plugin.js",
+      "types": "./dist/vite-plugin.d.ts"
     }
   },
   "bin": {
@@ -27,6 +29,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
+    "@babel/generator": "^7.28.6",
+    "@babel/helper-module-imports": "^7.28.6",
     "@babel/parser": "^7.28.6",
     "@babel/traverse": "^7.28.6",
     "@babel/types": "^7.28.6",
@@ -46,6 +50,7 @@
     "premove": "^4.0.0",
     "rolldown": "1.0.0-beta.60",
     "rolldown-plugin-dts": "^0.21.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }

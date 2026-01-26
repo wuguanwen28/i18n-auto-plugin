@@ -10,12 +10,18 @@ export const DEFAULT_CONFIG_PATH = 'i18n.config.js'
 
 export const DEFAULT_CONFIG: I18nConfig = {
   cache: true,
+  warn: false,
   logger: 'info',
   entry: './src',
   output: {
     dir: './src/locale',
     file: 'index.json',
     splitLngFile: false,
+  },
+  importInfo: {
+    source: __NAME__,
+    imported: 'i18n',
+    local: '_i18n',
   },
   test: '.*(js|jsx|ts|tsx|vue)$',
   include: ['src'],

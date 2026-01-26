@@ -125,12 +125,28 @@ export interface I18nConfig {
    * @default true
    */
   cache?: boolean
-
   /**
    * 日志级别
    * @default 'info'
    */
   logger?: LoggerLevel
+  /**
+   * 在语料中未包含中文是否提示
+   * @default true
+   */
+  warn?: boolean
+  /**
+   * 导入的i18n函数信息
+   * import { $imported as $local } from '$source'
+   */
+  importInfo?: {
+    /** 导入的模块名 */
+    source?: string
+    /** 导入的函数名 */
+    imported?: string
+    /** 别名 */
+    local?: string
+  }
   /**
    * 查找文件规则
    * @default /.*(js|jsx|ts|tsx|vue)$/

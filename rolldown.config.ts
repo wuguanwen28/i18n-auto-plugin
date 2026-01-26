@@ -28,8 +28,9 @@ const config = defineConfig({
       externalLiveBindings: false,
     },
   ],
-  external: [...Object.keys(pkg.dependencies)],
+  external: ['vite', ...Object.keys(pkg.dependencies)],
   plugins: [
+    dts(),
     replace({
       values: {
         __NAME__: JSON.stringify(pkg.name),
@@ -39,18 +40,4 @@ const config = defineConfig({
   ],
 })
 
-const dtsConfig = defineConfig({
-  input: {
-    index: path.resolve(__dirname, './src/index.ts'),
-  },
-  output: [
-    {
-      format: 'esm',
-      dir: './dist',
-      chunkFileNames: 'chunks/[name].d.ts',
-    },
-  ],
-  plugins: [dts()],
-})
-
-export default defineConfig([config, dtsConfig])
+export default defineConfig([config])
