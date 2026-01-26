@@ -8,6 +8,7 @@ import {
   getConfiguration,
   getExportPrefix,
   getHash,
+  getOutputMap,
   isAllowTranslate,
   logger,
   mkdirSync,
@@ -16,7 +17,7 @@ import {
   resolveFile,
   resolveTraverse,
   scanFile,
-  toArray,
+  time,
   tplRegexp,
 } from '../utils'
 import translatorMap, { BaiduTranslator } from '../translators'
@@ -24,6 +25,7 @@ import {
   Configuration,
   LanguagesMap,
   LngType,
+  OutputMap,
   TranslateOptions,
 } from '../types'
 import chalk from 'chalk'
@@ -35,7 +37,11 @@ export class Translate {
 
   config!: Configuration
 
+  count = 0
+
   languagesMap: LanguagesMap = {}
+
+  outputMap: OutputMap = {}
 
   constructor(options: TranslateOptions = {}) {
     this.customConfigPath = options.config
@@ -43,12 +49,15 @@ export class Translate {
 
   async run() {
     try {
-      await this.initConfig()
-      await this.getOldLanguagesMap()
-      await this.getNewLanguagesMap()
-      await this.writeLanguagesMap()
-      await this.translate()
-      logger.info('翻译完成')
+      const debug = true
+      const startTime = Date.now()
+      await time('初始化配置', () => this.initConfig(), debug)
+      await time('获取旧的语料', () => this.getOldLanguagesMap(), debug)
+      await time('扫描新的语料', () => this.getNewLanguagesMap(), debug)
+      await time('写入新语料', () => this.writeLanguagesMap(), debug)
+      await time('翻译语料', () => this.translate(), debug)
+      const totalTime = Date.now() - startTime
+      logger.info(chalk.green.bold(`[翻译完成] 总耗时：${totalTime}ms`))
     } catch (error) {
       logger.error(error as Error)
     }
@@ -63,12 +72,13 @@ export class Translate {
       process.exit(0)
     }
     this.config = { ...DEFAULT_CONFIG, ...config }
+    this.outputMap = getOutputMap(this.config)
     logger.setLogLevel(this.config.logger)
   }
 
   /** 获取旧的语言映射 */
   async getOldLanguagesMap() {
-    const outputMap = this.getOutputMap()
+    const outputMap = this.outputMap
     const mainPath = outputMap.main
     if (mainPath && fs.existsSync(mainPath)) {
       const content = await resolveFile(mainPath)
@@ -86,9 +96,8 @@ export class Translate {
 
   /** 获取新的语言映射 */
   async getNewLanguagesMap() {
-    const dir = toArray(this.config.entry)
     const __rootPath = this.config.__rootPath
-    dir.forEach((p) => {
+    this.config.entry.forEach((p) => {
       const dirPath = path.resolve(__rootPath, p)
       scanFile(dirPath, this.config, (p) => this.scanTargetLang(p))
     })
@@ -100,7 +109,7 @@ export class Translate {
     if (this.config.cache) languagesMap = cacheManager.getCache(filePath)
 
     if (!languagesMap) {
-      logger.info(`发现文件: ${filePath}`)
+      logger.info(`发现文件(${++this.count}): ${filePath}`)
 
       const ast = parseAst(filePath)
       if (!ast) return
@@ -142,15 +151,16 @@ export class Translate {
 
       languagesMap = result
     }
-
-    languagesMap! && cacheManager.setCache(filePath, languagesMap)
+    if (this.config.cache) {
+      cacheManager.setCache(filePath, languagesMap)
+    }
 
     this.mergeLanguagesMap(languagesMap)
   }
 
   /** 写入语言映射 */
-  async writeLanguagesMap() {
-    const outputMap = this.getOutputMap()
+  async writeLanguagesMap(targetLng?: LngType) {
+    const outputMap = this.outputMap
     const { splitLngFile } = this.config.output
 
     const writeFile = async (filepath: string, code: string) => {
@@ -170,6 +180,7 @@ export class Translate {
 
       if (splitLngFile) {
         for (const lng in outputMap) {
+          if (targetLng && targetLng !== lng) continue
           const filePath = outputMap[lng]
           const lngMap = Object.keys(this.languagesMap).reduce((prev, key) => {
             prev[key] = this.languagesMap[key][lng] || ''
@@ -189,8 +200,8 @@ export class Translate {
     const { translateService = 'baidu' } = this.config
     const Translator = translatorMap[translateService] || BaiduTranslator
     const translator = new Translator(this)
-    await translator.run(() => {
-      this.writeLanguagesMap()
+    await translator.run((lng) => {
+      this.writeLanguagesMap(lng)
     })
   }
 
@@ -216,27 +227,5 @@ export class Translate {
         }
       }
     }
-  }
-
-  getOutputMap() {
-    const { output, __rootPath, languages, originLang } = this.config
-    const { dir = DEFAULT_CONFIG.output.dir!, file, splitLngFile } = output
-
-    const result: { [key in LngType | 'main']?: string } = {}
-
-    if (!splitLngFile) {
-      const fileName = file || 'index.json'
-      result.main = path.resolve(__rootPath, dir, fileName)
-    } else {
-      let fileName = file || '[name].json'
-      if (!fileName.includes('[name]')) fileName = '[name].json'
-      for (const lng of [...languages, originLang]) {
-        const finalFileName = fileName.replace(/\[name\]/g, lng)
-        const filePath = path.resolve(__rootPath, dir, finalFileName)
-        result[lng] = filePath
-      }
-    }
-
-    return result
   }
 }

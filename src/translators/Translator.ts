@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
-import { logger } from '../utils'
+import { logger, sliceText } from '../utils'
 
 export abstract class Translator {
   config: Configuration
@@ -16,7 +16,7 @@ export abstract class Translator {
    * @param callback 每翻译完一个语种后的回调函数
    */
   async run(
-    callback?: (langMap: LanguagesMap) => void | Promise<any>,
+    callback?: (langMap: LngType) => void | Promise<any>,
   ): Promise<LanguagesMap> {
     const { languages, originLang = 'zh-CN' } = this.config
 
@@ -36,12 +36,15 @@ export abstract class Translator {
             }
             this.languagesMap[id] ||= {}
             this.languagesMap[id][toLang] = this.reFormatText(result[id])
-            logger.info(`翻译成功：${langMap[id]} -> ${result[id]}`)
+
+            const f = sliceText(langMap[id])
+            const t = sliceText(result[id])
+            logger.info(`翻译成功：${f} -> ${t}`)
           }
         }
       }
 
-      await callback?.(this.languagesMap)
+      await callback?.(toLang)
     }
 
     return this.languagesMap

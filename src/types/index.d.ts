@@ -1,5 +1,3 @@
-import { Translator } from '../translators/Translator'
-
 export type InitConfigOptions = {
   /**
    * 是否强制覆盖
@@ -187,15 +185,27 @@ export interface I18nConfig {
    * 自定义翻译器
    *
    */
-  CustomTranslate?: Translator
+  CustomTranslate?: (
+    /**
+     * 要翻译的文本
+     * { "id": "文本" }
+     */
+    texts: TranslateParams,
+    fromLang: LngType,
+    toLang: LngType,
+  ) => Promise<TranslateParams>
 }
 
 export type Configuration = Omit<
   Required<I18nConfig>,
-  'include' | 'exclude' | 'test'
+  'include' | 'exclude' | 'entry'
 > & {
-  test: RegExp
+  entry: string[]
   include: string[]
   exclude: string[]
   __rootPath: string
+}
+
+export type OutputMap = {
+  [key in LngType | 'main']?: string
 }

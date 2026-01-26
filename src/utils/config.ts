@@ -6,7 +6,7 @@ export const DEFAULT_EXCLUDE_CALL = [
   '_createCommentVNode',
 ]
 
-export const DEFAULT_CONFIG_PATH = 'i18n.config.mjs'
+export const DEFAULT_CONFIG_PATH = 'i18n.config.js'
 
 export const DEFAULT_CONFIG: I18nConfig = {
   cache: true,
