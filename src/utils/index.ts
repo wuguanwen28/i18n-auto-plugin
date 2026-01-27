@@ -5,14 +5,7 @@ import path from 'node:path'
 import prettier from 'prettier'
 import crypto from 'node:crypto'
 import { cosmiconfigSync } from 'cosmiconfig'
-import { logger } from './logger'
-import { DEFAULT_CONFIG } from './config'
 import { Configuration, LanguagesMap, LngType, OutputMap } from '../types'
-
-export * from './parse'
-export * from './ceche'
-export * from './config'
-export * from './logger'
 
 export const getPrettierConfig = async (filePath?: string) => {
   if (!filePath) {
@@ -162,11 +155,14 @@ export function getExportPrefix(filePath: string) {
   return 'export default '
 }
 
-export const time = (name: string, func: () => any, enable = true) => {
+export const time = (
+  name: string,
+  func: () => any,
+  logger: (msg: string) => void,
+) => {
   const start = Date.now()
   const res = func()
   const log = () => {
-    if (!enable) return
     const time = Date.now() - start
     let msg = `[${name}] 耗时：${time}ms`
     if (time < 100) {
@@ -176,7 +172,7 @@ export const time = (name: string, func: () => any, enable = true) => {
     } else if (time > 1000) {
       msg = chalk.red(msg)
     }
-    logger.info(msg)
+    logger(msg)
   }
 
   if (res instanceof Promise) return res.finally(log)
@@ -187,7 +183,7 @@ export const time = (name: string, func: () => any, enable = true) => {
 
 export const getOutputMap = (config: Configuration) => {
   const { output, __rootPath, languages, originLang } = config
-  const { dir = DEFAULT_CONFIG.output.dir!, file, splitLngFile } = output
+  const { dir = './src/locale', file, splitLngFile } = output
   const result: OutputMap = {}
 
   if (!splitLngFile) {

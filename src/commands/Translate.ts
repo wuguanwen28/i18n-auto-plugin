@@ -1,24 +1,17 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import chalk from 'chalk'
 
 import {
-  DEFAULT_CONFIG,
-  DEFAULT_EXCLUDE_CALL,
-  cacheManager,
   getConfiguration,
   getExportPrefix,
   getHash,
   getOutputMap,
-  isAllowTranslate,
-  logger,
   mkdirSync,
-  parseAst,
   prettierCode,
   resolveFile,
-  resolveTraverse,
   scanFile,
   time,
-  tplRegexp,
 } from '../utils'
 import translatorMap, { BaiduTranslator } from '../translators'
 import {
@@ -28,7 +21,14 @@ import {
   OutputMap,
   TranslateOptions,
 } from '../types'
-import chalk from 'chalk'
+import {
+  DEFAULT_CONFIG,
+  DEFAULT_EXCLUDE_CALL,
+  tplRegexp,
+} from '../utils/config'
+import { logger } from '../utils/logger'
+import { cacheManager } from '../utils/ceche'
+import { isAllowTranslate, parseAst, resolveTraverse } from '../utils/parse'
 
 const traverse = resolveTraverse()
 
@@ -49,13 +49,13 @@ export class Translate {
 
   async run() {
     try {
-      const debug = true
+      const log = logger.info
       const startTime = Date.now()
-      await time('初始化配置', () => this.initConfig(), debug)
-      await time('获取旧的语料', () => this.getOldLanguagesMap(), debug)
-      await time('扫描新的语料', () => this.getNewLanguagesMap(), debug)
-      await time('写入新语料', () => this.writeLanguagesMap(), debug)
-      await time('翻译语料', () => this.translate(), debug)
+      await time('初始化配置', () => this.initConfig(), log)
+      await time('获取旧的语料', () => this.getOldLanguagesMap(), log)
+      await time('扫描新的语料', () => this.getNewLanguagesMap(), log)
+      await time('写入新语料', () => this.writeLanguagesMap(), log)
+      await time('翻译语料', () => this.translate(), log)
       const totalTime = Date.now() - startTime
       logger.info(chalk.green.bold(`[翻译完成] 总耗时：${totalTime}ms`))
     } catch (error) {

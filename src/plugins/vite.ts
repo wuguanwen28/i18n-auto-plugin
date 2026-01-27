@@ -1,8 +1,12 @@
 import type { Plugin } from 'vite'
-
 import { I18nPlugin } from './core'
 import { Configuration, LanguagesMap } from '../types'
-import { createFilter, getConfiguration, readLanguagesMap } from '../utils'
+import {
+  createFilter,
+  getConfiguration,
+  readLanguagesMap,
+  sliceText,
+} from '../utils'
 
 type Options = {
   configPath?: string
@@ -28,7 +32,12 @@ export function i18nAutoPlugin(options?: Options): Plugin {
           filePath: id,
           config: config,
           lngMap: lngMap,
-          emitWarning: this.warn.bind(this),
+          emitWarning: ({ text, line, column }) => {
+            this.warn(
+              `在语料库中未发现该文本【${sliceText(text)}】请更新语料库`,
+              { line, column },
+            )
+          },
         })
         if (res) return res
       }

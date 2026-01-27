@@ -1,13 +1,9 @@
 import { dirname, resolve } from 'path'
 import { InitConfigOptions } from '../types'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import {
-  DEFAULT_CONFIG,
-  DEFAULT_CONFIG_PATH,
-  getExportPrefix,
-  logger,
-  prettierCode,
-} from '../utils'
+import { logger } from '../utils/logger'
+import { getExportPrefix, prettierCode } from '../utils'
+import { DEFAULT_CONFIG, DEFAULT_CONFIG_PATH } from '../utils/config'
 
 export class InitConfig {
   force: boolean

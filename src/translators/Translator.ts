@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
-import { logger, sliceText } from '../utils'
+import { sliceText } from '../utils'
+import { logger } from '../utils/logger'
 
 export abstract class Translator {
   config: Configuration

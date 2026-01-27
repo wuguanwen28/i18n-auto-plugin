@@ -2,16 +2,13 @@ import { Configuration, LanguagesMap } from '../types'
 import { addNamed } from '@babel/helper-module-imports'
 import * as t from '@babel/types'
 import {
-  DEFAULT_EXCLUDE_CALL,
-  getHash,
   isAllowTranslate,
   parseAst,
   resolveGenerator,
   resolveTraverse,
-  sliceText,
-  tplRegexp,
-} from '../utils'
-import chalk from 'chalk'
+} from '../utils/parse'
+import { getHash } from '../utils'
+import { DEFAULT_EXCLUDE_CALL, tplRegexp } from '../utils/config'
 
 const traverse = resolveTraverse()
 const generator = resolveGenerator()
@@ -26,10 +23,12 @@ export const I18nPlugin = (params: {
   code: string
   filePath: string
   config: Configuration
-  emitWarning: (
-    log: string,
-    pos?: number | { column: number; line: number },
-  ) => void
+  emitWarning: (options: {
+    text: string
+    id: string
+    line: number
+    column: number
+  }) => void
   lngMap: LanguagesMap | { [id: string]: string }
 }) => {
   try {
@@ -52,13 +51,13 @@ export const I18nPlugin = (params: {
 
     const isHasLng = ({ id, value, loc }: IsHasLngOptions) => {
       const hasLng = lngMap[id]
-      const content = `在语言包中未发现以下字段【${chalk.blue(sliceText(value))}】请更新语言包`
-      if (!hasLng && config.warn) {
-        const pos = loc
-          ? { line: loc?.start.line || 0, column: loc?.start.column || 0 }
-          : undefined
-
-        emitWarning(content, pos)
+      if (!hasLng && config.emitWarn) {
+        emitWarning({
+          text: value,
+          id: filePath,
+          line: loc?.start.line || 0,
+          column: loc?.start.column || 0,
+        })
       }
       return Boolean(hasLng)
     }

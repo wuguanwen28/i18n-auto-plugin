@@ -134,7 +134,7 @@ export interface I18nConfig {
    * 在语料中未包含中文是否提示
    * @default true
    */
-  warn?: boolean
+  emitWarn?: boolean
   /**
    * 导入的i18n函数信息
    * import { $imported as $local } from '$source'
