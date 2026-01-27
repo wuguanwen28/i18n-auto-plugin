@@ -1,4 +1,4 @@
-import { LngType } from './types/index'
+import { LanguagesMap, LngType } from './types/index'
 
 export type * from './types/index'
 
@@ -39,20 +39,23 @@ const makeTranslator = (locale?: string): TranslateFn => {
  * @param {boolean} cover 是否覆盖
  */
 function extendLocale(
-  name: LngType,
-  config: Record<string, string>,
+  lngMap: Record<string, string> | LanguagesMap,
+  lng?: LngType,
   cover: boolean = true,
 ) {
-  if (cover) {
-    // 覆盖式扩展语料
-    locales[name] = {
-      ...(locales[name] || {}),
-      ...config,
-    }
-  } else {
-    locales[name] = {
-      ...config,
-      ...(locales[name] || {}),
+  if (!lngMap || typeof lngMap !== 'object') return
+  for (let key in lngMap) {
+    let item = lngMap[key]
+    if (item && typeof item === 'object') {
+      for (let lng in item) {
+        if (!locales[lng]) locales[lng] = {}
+        const oldValue = locales[lng][key] || item[lng]
+        locales[lng][key] = cover ? item[lng] : oldValue
+      }
+    } else if (lng) {
+      if (!locales[lng]) locales[lng] = {}
+      const oldValue = locales[lng][key] || item
+      locales[lng][key] = cover ? item : oldValue
     }
   }
 }

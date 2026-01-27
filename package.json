@@ -12,8 +12,13 @@
       "import": "./dist/index.js"
     },
     "./vite": {
-      "import": "./dist/vite-plugin.js",
-      "types": "./dist/vite-plugin.d.ts"
+      "types": "./dist/vite-plugin.d.ts",
+      "import": "./dist/vite-plugin.js"
+    },
+    "./webpack": {
+      "types": "./dist/webpack-plugin.d.ts",
+      "import": "./dist/webpack-plugin.js",
+      "require": "./dist/cjs/webpack-plugin.cjs"
     }
   },
   "bin": {
@@ -51,6 +56,7 @@
     "rolldown": "1.0.0-beta.60",
     "rolldown-plugin-dts": "^0.21.2",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "webpack": "^5.104.1"
   }
 }
