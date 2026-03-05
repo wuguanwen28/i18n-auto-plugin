@@ -30,9 +30,22 @@
     "build": "premove dist && pnpm build-bundle",
     "build-bundle": "rolldown -c rolldown.config.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "i18n",
+    "vue-i18n",
+    "react-i18n",
+    "translate",
+    "auto-translate",
+    "翻译",
+    "国际化",
+    "自动翻译"
+  ],
+  "author": "wuguanwen",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wuguanwen28/i18n-auto-react.git"
+  },
+  "license": "MIT",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
     "@babel/generator": "^7.28.6",
