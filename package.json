@@ -1,6 +1,6 @@
 {
   "name": "i18n-auto-plugin",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "",
   "type": "module",
   "main": "./dist/index.js",
@@ -13,7 +13,8 @@
     },
     "./vite": {
       "types": "./dist/vite-plugin.d.ts",
-      "import": "./dist/vite-plugin.js"
+      "import": "./dist/vite-plugin.js",
+      "require": "./dist/cjs/vite-plugin.cjs"
     },
     "./webpack": {
       "types": "./dist/webpack-plugin.d.ts",

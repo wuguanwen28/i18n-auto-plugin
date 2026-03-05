@@ -112,6 +112,7 @@ export function scanFile(
   const filter = createFilter(config)
 
   const run = (dirPath: string) => {
+    if (!fs.existsSync(dirPath)) return
     const dirOrFiles = fs.readdirSync(dirPath, { encoding: 'utf8' })
     for (const item of dirOrFiles) {
       const filePath = path.resolve(dirPath, item)

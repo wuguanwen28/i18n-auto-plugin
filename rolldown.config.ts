@@ -43,10 +43,11 @@ const baseConfig = defineConfig({
   plugins: [dts(), replacePlugin],
 })
 
-const webpackConfig = defineConfig({
+const commonjsConfig = defineConfig({
   input: {
     'webpack-plugin': webpackPath('plugin'),
     'webpack-loader': webpackPath('loader'),
+    'vite-plugin': path.resolve(__dirname, './src/plugins/vite.ts'),
   },
   output: [
     {
@@ -60,4 +61,4 @@ const webpackConfig = defineConfig({
   external: baseConfig.external,
 })
 
-export default defineConfig([baseConfig, webpackConfig])
+export default defineConfig([baseConfig, commonjsConfig])

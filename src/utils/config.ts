@@ -10,7 +10,7 @@ export const DEFAULT_CONFIG_PATH = 'i18n.config.js'
 
 export const DEFAULT_CONFIG: I18nConfig = {
   cache: true,
-  warn: false,
+  emitWarn: false,
   logger: 'info',
   entry: './src',
   output: {
