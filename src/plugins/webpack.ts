@@ -1,4 +1,4 @@
-import { I18nAuto, Options } from '../unplugin'
+import { I18nAuto, Options } from './unplugin'
 
 /**
  * 兼容 `new I18nAutoWebpackPlugin()` 与 `I18nAutoWebpackPlugin()` 两种调用方式

@@ -31,6 +31,7 @@ import {
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/ceche'
 import { isAllowTranslate, parseAst, resolveTraverse } from '../utils/parse'
+import { extractVueSfc } from '../plugins/vue-sfc'
 
 const traverse = resolveTraverse()
 
@@ -113,9 +114,6 @@ export class Translate {
     if (!languagesMap) {
       logger.info(`发现文件(${++this.count}): ${filePath}`)
 
-      const ast = parseAst(filePath)
-      if (!ast) return
-
       let { excludeCall = [] } = this.config || {}
       excludeCall = [...excludeCall, ...DEFAULT_EXCLUDE_CALL]
 
@@ -126,30 +124,49 @@ export class Translate {
         result[id]['zh-CN'] = text
       }
 
-      traverse(ast, {
-        // jsx文本：<div>花飘万家雪</div>
-        JSXText(path) {
-          if (!isAllowTranslate(path, excludeCall)) return
-          const text = path.toString().trim()
-          addText(text)
-        },
-        // 普通文本：'花飘万家雪'
-        StringLiteral(path) {
-          if (!isAllowTranslate(path, excludeCall)) return
-          const text = path.node.value.toString()
-          addText(text)
-        },
-        // 模板文本：`花飘万家雪${xxx}`
-        TemplateLiteral(path) {
-          if (!isAllowTranslate(path, excludeCall)) return
-          let i = 0
-          const text = path
-            .toString()
-            .replace(/^`|`$/g, '')
-            .replace(tplRegexp, () => `{{@${++i}}}`)
-          addText(text)
-        },
-      })
+      const scanScript = (code: string) => {
+        const ast = parseAst(filePath, code)
+        if (!ast) return
+        traverse(ast, {
+          // jsx文本：<div>花飘万家雪</div>
+          JSXText(path) {
+            if (!isAllowTranslate(path, excludeCall)) return
+            const text = path.toString().trim()
+            addText(text)
+          },
+          // 普通文本：'花飘万家雪'
+          StringLiteral(path) {
+            if (!isAllowTranslate(path, excludeCall)) return
+            const text = path.node.value.toString()
+            addText(text)
+          },
+          // 模板文本：`花飘万家雪${xxx}`
+          TemplateLiteral(path) {
+            if (!isAllowTranslate(path, excludeCall)) return
+            let i = 0
+            const text = path
+              .toString()
+              .replace(/^`|`$/g, '')
+              .replace(tplRegexp, () => `{{@${++i}}}`)
+            addText(text)
+          },
+        })
+      }
+
+      // .vue：template 文本走与插件转换共用的 walker（hash 一致），
+      // script 块走 babel 扫描
+      if (filePath.endsWith('.vue')) {
+        if (fs.existsSync(filePath)) {
+          const code = fs.readFileSync(filePath, 'utf-8')
+          const { texts, scripts } = extractVueSfc(code, filePath)
+          texts.forEach(addText)
+          scripts.forEach(scanScript)
+        }
+      } else {
+        scanScript(
+          fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf-8') : '',
+        )
+      }
 
       languagesMap = result
     }

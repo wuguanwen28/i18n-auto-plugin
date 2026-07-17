@@ -1,12 +1,10 @@
 import fs from 'node:fs'
-import path from 'node:path'
 import * as t from '@babel/types'
 import { parse } from '@babel/parser'
 import { NodePath } from '@babel/traverse'
 import type Traverse from '@babel/traverse'
 import type Generator from '@babel/generator'
 import { createRequire } from 'node:module'
-import { compileTemplate, parse as parseSFC } from '@vue/compiler-sfc'
 
 import { logger } from './logger'
 import { ZH_EXT } from './config'
@@ -24,11 +22,9 @@ export const resolveGenerator = (): Generator => {
 }
 
 export const parseAst = (filePath: string, code?: string) => {
-  const ext = path.extname(filePath)
   if (!code) {
     if (!fs.existsSync(filePath)) return null
     code = fs.readFileSync(filePath, 'utf-8')
-    if (ext === '.vue') code = vueSfcToTsx(code, filePath)
   }
 
   try {
@@ -42,37 +38,6 @@ export const parseAst = (filePath: string, code?: string) => {
   } catch (error) {
     logger.error(`parseAst error:`, error as Error)
     return null
-  }
-}
-
-export function vueSfcToTsx(code: string, filePath: string) {
-  try {
-    const { descriptor } = parseSFC(code, {
-      filename: filePath,
-      sourceMap: false,
-    })
-
-    const { template, script, scriptSetup } = descriptor
-
-    let templateContent = ''
-    if (template?.content) {
-      templateContent = compileTemplate({
-        id: `1`,
-        scoped: false,
-        ast: template.ast,
-        filename: filePath,
-        source: template.content,
-      }).code
-    }
-
-    const content = [script?.content, scriptSetup?.content, templateContent]
-      .filter(Boolean)
-      .join('\n')
-
-    return content || code
-  } catch (error) {
-    logger.error(`vueSfcToTsx error:`, error as Error)
-    return code
   }
 }
 

@@ -55,8 +55,8 @@ const nodeEsmConfig = defineConfig({
   platform: 'node',
   input: {
     'bin': resolve('./src/bin/i18n.ts'),
-    'vite-plugin': resolve('./src/plugins/vite/plugin.ts'),
-    'webpack-plugin': resolve('./src/plugins/webpack/plugin.ts'),
+    'vite-plugin': resolve('./src/plugins/vite.ts'),
+    'webpack-plugin': resolve('./src/plugins/webpack.ts'),
   },
   output: {
     dir: './dist',
@@ -76,8 +76,8 @@ const nodeEsmConfig = defineConfig({
 const nodeCjsConfig = defineConfig({
   platform: 'node',
   input: {
-    'vite-plugin': resolve('./src/plugins/vite/plugin.ts'),
-    'webpack-plugin': resolve('./src/plugins/webpack/plugin.ts'),
+    'vite-plugin': resolve('./src/plugins/vite.ts'),
+    'webpack-plugin': resolve('./src/plugins/webpack.ts'),
   },
   output: {
     dir: './dist/cjs',

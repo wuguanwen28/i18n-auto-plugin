@@ -19,7 +19,12 @@ type IsHasLngOptions = {
   loc?: t.SourceLocation | null
 }
 
-export const I18nPlugin = (params: {
+/**
+ * babel AST 转换：把 JS/TS/JSX 源码中已收录进语料库的中文字符串
+ * 替换为 _i18n(hash) 调用，并自动注入 import。
+ * 被 unplugin（js/ts/jsx/tsx 文件）与 vue-sfc（script 块）共用。
+ */
+export const transformWithBabel = (params: {
   code: string
   filePath: string
   config: Configuration
