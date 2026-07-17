@@ -18,7 +18,7 @@
 - **后果**：`splitLngFile: true` 模式下旧翻译全部加载失败 → 每次全量重新翻译（浪费 API 费用）；且语料库中产生 id 为 `"lng"` 的垃圾条目
 - **修复**：改为 `{ [lng]: content }`
 
-### 3. StringLiteral 替换命中非法 AST 位置 → 整文件翻译静默失效 ✅
+### 3. StringLiteral 替换命中非法 AST 位置 → 整文件翻译静默失效 ✅【已修复：isAllowTranslate 排除对象键/类键/import路径/枚举成员等位置；转换 catch 改走 logger 并带文件名】
 - **位置**：`src/utils/parse.ts:125`（`isAllowTranslate`）+ `src/plugins/core.ts`
 - **现象**：源码中存在 `const obj = { "中文键": 1 }` 这类**对象属性键为中文**的写法时，`path.replaceWith(callExpression)` 抛 `TypeError: Property key of ObjectProperty expected node to be of a type [...] but instead got "CallExpression"`
 - **后果**：`core.ts:175` 外层 try/catch 吞掉异常，仅 `console.log`，该文件**所有**翻译静默丢失，页面显示原始中文，极难排查
@@ -31,7 +31,7 @@
 - **附带**：`I18nConfig.CustomTranslate` 配置项（types/index.d.ts:243）定义了但 `CustomTranslator` 从未调用，是死配置。README 声称支持有道/自定义翻译与实际不符
 - **修复方向**：CustomTranslator 调用 `config.CustomTranslate`；Google/Youdao 未实现前应直接 throw 而非静默返回原文
 
-### 5. SSR / Node 环境 import 运行时包即崩溃
+### 5. SSR / Node 环境 import 运行时包即崩溃 【已修复：typeof window 守卫 storage 与 reload】
 - **位置**：`src/index.ts:26` + `src/index.ts:134`
 - **现象**：`storage: window?.localStorage` —— 可选链不能保护未声明的标识符；模块顶层 `new I18nManager()` 使得 Node/SSR（Nuxt、Next、vitest）中 import 即抛 `ReferenceError: window is not defined`
 - **修复**：`typeof window !== 'undefined' ? window.localStorage : undefined`；同理 `changeLanguage` 里的 `window.location.reload()` 也需守卫

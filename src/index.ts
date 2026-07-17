@@ -5,6 +5,10 @@ const lngList: LngType[] = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'zh-TW']
 
 const isObj = (obj: any) => typeof obj === 'object' && obj !== null
 
+// SSR/Node/小程序等无 window 环境守卫：
+// window?.xxx 不能保护未声明的全局标识符，必须用 typeof 判断
+const isBrowser = typeof window !== 'undefined'
+
 type TranslateFn<T = any> = (str: T, data?: object) => T
 
 export type I18nManagerOptions = {
@@ -23,7 +27,7 @@ export class I18nManager {
 
   _options: Required<I18nManagerOptions> = {
     currentLng: 'zh-CN',
-    storage: window?.localStorage,
+    storage: isBrowser ? window.localStorage : undefined!,
     localStorageKey: '$w-i18n-auto-locale',
   }
 
@@ -127,7 +131,7 @@ export class I18nManager {
     storage?.setItem(localStorageKey, lng)
     this.i18n = this._createTranslator(lng)
     i18n = this.i18n.bind(this)
-    if (autoLoad) window.location.reload()
+    if (autoLoad && isBrowser) window.location.reload()
   }
 }
 

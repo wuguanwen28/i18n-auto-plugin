@@ -87,6 +87,56 @@ export function getCallName(node: t.Node): string | null {
   return null
 }
 
+/**
+ * 该字符串所处的 AST 位置是否禁止替换为 CallExpression。
+ * 这些位置的字符串是语法结构的一部分，替换会导致 babel 抛
+ * TypeError，进而使整个文件的转换静默失效。
+ * 扫描侧同样要跳过，保证扫描/转换两侧文本集合一致。
+ */
+const isForbiddenPosition = (path: NodePath<t.Node>) => {
+  const { parent, node } = path
+
+  // 对象属性键：{ "中文": 1 }（computed 键 { ["中文"]: 1 } 是表达式，可替换）
+  if (
+    (t.isObjectProperty(parent) || t.isObjectMethod(parent)) &&
+    parent.key === node &&
+    !parent.computed
+  ) {
+    return true
+  }
+
+  // 类属性/方法键：class A { "中文" = 1 }
+  if (
+    (t.isClassProperty(parent) || t.isClassMethod(parent)) &&
+    parent.key === node &&
+    !parent.computed
+  ) {
+    return true
+  }
+
+  // import / export 的模块路径：import x from '中文路径'
+  if (
+    t.isImportDeclaration(parent) ||
+    t.isExportNamedDeclaration(parent) ||
+    t.isExportAllDeclaration(parent)
+  ) {
+    return true
+  }
+
+  // import { "中文" as x } 的 imported 位置
+  if (t.isImportSpecifier(parent) || t.isExportSpecifier(parent)) {
+    return true
+  }
+
+  // 枚举成员名：enum E { "中文" = 1 }
+  if (t.isTSEnumMember(parent) && parent.id === node) return true
+
+  // JSX 属性名侧不可能是 StringLiteral，无需处理；
+  // TS 字面量类型在 isAllowTranslate 已单独排除
+
+  return false
+}
+
 export const isAllowTranslate = (
   path:
     | NodePath<t.JSXText>
@@ -107,7 +157,10 @@ export const isAllowTranslate = (
   if (!ZH_EXT.test(text)) return false
 
   // 父节点是ts字面量类型，不翻译
-  if (t.isTSLiteralType(path.parent)) return
+  if (t.isTSLiteralType(path.parent)) return false
+
+  // 语法结构位置（对象键、import路径等），替换会产生非法 AST
+  if (isForbiddenPosition(path)) return false
 
   // 调用名在排除列表中
   const callName = getCallName(path.parent)

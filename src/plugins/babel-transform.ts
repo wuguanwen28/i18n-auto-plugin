@@ -8,6 +8,7 @@ import {
   resolveTraverse,
 } from '../utils/parse'
 import { getHash } from '../utils'
+import { logger } from '../utils/logger'
 import { DEFAULT_EXCLUDE_CALL, tplRegexp } from '../utils/config'
 
 const traverse = resolveTraverse()
@@ -178,6 +179,7 @@ export const transformWithBabel = (params: {
       }
     }
   } catch (error) {
-    console.log('error ==> ', error)
+    // 转换失败意味着该文件所有翻译丢失，必须显式告警而非静默吞掉
+    logger.error(`i18n转换失败，该文件翻译未生效(${params.filePath}):`, error as Error)
   }
 }
