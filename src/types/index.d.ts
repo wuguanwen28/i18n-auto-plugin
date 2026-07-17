@@ -20,11 +20,50 @@ export type LoggerLevel = 'error' | 'warn' | 'info' | 'none'
 
 export type LngType = 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR' | 'zh-TW'
 
-export type LanguagesMap = {
+/**
+ * 语言映射表 - 按键
+ * @example
+ * let map = {
+ *   'id1': {
+ *     'zh-CN': '你好',
+ *     'en-US': 'Hello',
+ *   },
+ *   'id2': {
+ *     'zh-CN': '世界',
+ *     'en-US': 'World',
+ *   },
+ * }
+ */
+export type LanguagesMapById = {
   [id: string]: { [key in LngType]?: string }
 }
 
+/**
+ * 语言映射表 - 按语言
+ * @example
+ * let map = {
+ *   'zh-CN': {
+ *     'id1': '你好',
+ *     'id2': '世界',
+ *   },
+ *   'en-US': {
+ *     'id1': 'Hello',
+ *     'id2': 'World',
+ *   },
+ * }
+ */
+export type LanguagesMapByLocale = {
+  [lng in LngType]?: { [id: string]: string }
+}
+
+export type LanguagesMap = LanguagesMapById | LanguagesMapByLocale
+
 export type TranslateParams = { [id: string]: string }
+
+export type TranslatorOptions = {
+  languagesMap: LanguagesMapById
+  config: Configuration
+}
 
 export type TranslateServiceType =
   | 'google'

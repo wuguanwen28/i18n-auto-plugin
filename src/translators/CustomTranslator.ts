@@ -1,12 +1,8 @@
-import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
+import { LngType, TranslateParams, TranslatorOptions } from '../types'
 import { Translator } from './Translator'
 
 export class CustomTranslator extends Translator {
-  constructor(options: {
-    languagesMap: LanguagesMap
-    config: Configuration
-    writeLanguagesMap: () => void
-  }) {
+  constructor(options: TranslatorOptions) {
     super(options)
   }
 

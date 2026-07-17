@@ -26,6 +26,7 @@ export const resolveGenerator = (): Generator => {
 export const parseAst = (filePath: string, code?: string) => {
   const ext = path.extname(filePath)
   if (!code) {
+    if (!fs.existsSync(filePath)) return null
     code = fs.readFileSync(filePath, 'utf-8')
     if (ext === '.vue') code = vueSfcToTsx(code, filePath)
   }

@@ -2,10 +2,9 @@ import chalk from 'chalk'
 import {
   BaiduAiTranslateServiceConfig,
   BaiduTranslateServiceConfig,
-  Configuration,
-  LanguagesMap,
   LngType,
   TranslateParams,
+  TranslatorOptions,
 } from '../types'
 import { Translator } from './Translator'
 import crypto from 'node:crypto'
@@ -24,7 +23,7 @@ export class BaiduTranslator extends Translator {
     'ko-KR': 'kor',
   }
 
-  constructor(options: { languagesMap: LanguagesMap; config: Configuration }) {
+  constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, baidu } = options.config || {}
     if (translateService === 'baidu') {

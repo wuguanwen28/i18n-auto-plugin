@@ -1,13 +1,19 @@
 import chalk from 'chalk'
-import { Configuration, LanguagesMap, LngType, TranslateParams } from '../types'
+import {
+  Configuration,
+  LanguagesMapById,
+  LngType,
+  TranslateParams,
+  TranslatorOptions,
+} from '../types'
 import { sliceText } from '../utils'
 import { logger } from '../utils/logger'
 
 export abstract class Translator {
   config: Configuration
-  languagesMap: LanguagesMap
+  languagesMap: LanguagesMapById
 
-  constructor(options: { languagesMap: LanguagesMap; config: Configuration }) {
+  constructor(options: TranslatorOptions) {
     this.config = options.config
     this.languagesMap = options.languagesMap
   }
@@ -18,7 +24,7 @@ export abstract class Translator {
    */
   async run(
     callback?: (langMap: LngType) => void | Promise<any>,
-  ): Promise<LanguagesMap> {
+  ): Promise<LanguagesMapById> {
     const { languages, originLang = 'zh-CN' } = this.config
 
     for (const toLang of languages) {

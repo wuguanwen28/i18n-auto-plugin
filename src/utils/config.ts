@@ -1,4 +1,4 @@
-import { I18nConfig } from '../types'
+import { I18nConfig, LngType } from '../types'
 
 export const DEFAULT_EXCLUDE_CALL = [
   'i18n',
@@ -26,7 +26,7 @@ export const DEFAULT_CONFIG: I18nConfig = {
   test: '.*(js|jsx|ts|tsx|vue)$',
   include: ['src'],
   exclude: ['node_modules'],
-  excludeCall: ['i18n', 'console.log'],
+  excludeCall: ['i18n', 'console.log', 'console.warn', 'console.error'],
   originLang: 'zh-CN',
   languages: ['en-US'],
   translateService: 'baidu',
@@ -40,3 +40,5 @@ export const DEFAULT_CONFIG: I18nConfig = {
 export const ZH_EXT = /[\u4e00-\u9fa5]+/
 
 export const tplRegexp = /(?<!\\)\$\{([\s\S]+?)\}/g
+
+export const lngList: LngType[] = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'zh-TW']

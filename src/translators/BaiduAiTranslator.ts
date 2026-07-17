@@ -1,9 +1,8 @@
 import {
   BaiduAiTranslateServiceConfig,
-  Configuration,
-  LanguagesMap,
   LngType,
   TranslateParams,
+  TranslatorOptions,
 } from '../types'
 import { BaiduTranslator } from './BaiduTranslator'
 
@@ -14,7 +13,7 @@ export class BaiduAiTranslator extends BaiduTranslator {
   // @ts-ignore
   declare serverConfig: BaiduAiTranslateServiceConfig
 
-  constructor(options: { languagesMap: LanguagesMap; config: Configuration }) {
+  constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, baiduAi } = options.config || {}
     if (translateService === 'baiduAi') {

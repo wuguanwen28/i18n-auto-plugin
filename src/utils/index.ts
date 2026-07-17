@@ -5,7 +5,7 @@ import path from 'node:path'
 import prettier from 'prettier'
 import crypto from 'node:crypto'
 import { cosmiconfigSync } from 'cosmiconfig'
-import { Configuration, LanguagesMap, LngType, OutputMap } from '../types'
+import { Configuration, LanguagesMapById, LngType, OutputMap } from '../types'
 
 export const getPrettierConfig = async (filePath?: string) => {
   if (!filePath) {
@@ -206,7 +206,7 @@ export const getOutputMap = (config: Configuration) => {
 export const readLanguagesMap = (
   config: Configuration,
   lng?: LngType,
-): LanguagesMap | { [id: string]: string } | null => {
+): LanguagesMapById | null => {
   if (!config) return null
 
   const outputMap = getOutputMap(config)

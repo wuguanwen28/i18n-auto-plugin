@@ -1,4 +1,4 @@
-import { Configuration, LanguagesMap } from '../types'
+import { Configuration } from '../types'
 import { addNamed } from '@babel/helper-module-imports'
 import * as t from '@babel/types'
 import {
@@ -29,7 +29,7 @@ export const I18nPlugin = (params: {
     line: number
     column: number
   }) => void
-  lngMap: LanguagesMap | { [id: string]: string }
+  lngMap: { [id: string]: any }
 }) => {
   try {
     const { code, filePath, config, emitWarning, lngMap } = params

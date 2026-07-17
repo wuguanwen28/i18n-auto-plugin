@@ -17,6 +17,7 @@ import translatorMap, { BaiduTranslator } from '../translators'
 import {
   Configuration,
   LanguagesMap,
+  LanguagesMapById,
   LngType,
   OutputMap,
   TranslateOptions,
@@ -24,6 +25,7 @@ import {
 import {
   DEFAULT_CONFIG,
   DEFAULT_EXCLUDE_CALL,
+  lngList,
   tplRegexp,
 } from '../utils/config'
 import { logger } from '../utils/logger'
@@ -39,7 +41,7 @@ export class Translate {
 
   count = 0
 
-  languagesMap: LanguagesMap = {}
+  languagesMap: LanguagesMapById = {}
 
   outputMap: OutputMap = {}
 
@@ -88,7 +90,7 @@ export class Translate {
         const filePath = outputMap[lng]
         if (filePath && fs.existsSync(filePath)) {
           const content = await resolveFile(filePath)
-          this.mergeLanguagesMap(content, lng as LngType)
+          this.mergeLanguagesMap({ lng: content })
         }
       }
     }
@@ -105,7 +107,7 @@ export class Translate {
 
   /** 扫描文件中的目标语言 */
   scanTargetLang(filePath: string) {
-    let languagesMap: LanguagesMap | null = null
+    let languagesMap: LanguagesMapById | null = null
     if (this.config.cache) languagesMap = cacheManager.getCache(filePath)
 
     if (!languagesMap) {
@@ -117,7 +119,7 @@ export class Translate {
       let { excludeCall = [] } = this.config || {}
       excludeCall = [...excludeCall, ...DEFAULT_EXCLUDE_CALL]
 
-      let result: LanguagesMap = {}
+      let result: LanguagesMapById = {}
       const addText = (text: string) => {
         const id = getHash(text)
         result[id] = result[id] || {}
@@ -206,24 +208,20 @@ export class Translate {
   }
 
   /** 合并语言映射 */
-  mergeLanguagesMap(
-    currentMap: LanguagesMap | Record<string, string> | null,
-    key?: LngType,
-  ) {
+  mergeLanguagesMap(currentMap: LanguagesMap | null) {
     if (!currentMap) return
-    for (const id in currentMap) {
-      const item = currentMap[id]
-      this.languagesMap[id] ||= {}
-      if (typeof item === 'string') {
-        if (!key) throw new Error('key is required')
-        this.languagesMap[id] = {
-          ...this.languagesMap[id],
-          [key]: item,
+    for (const idOrLng in currentMap) {
+      const item = currentMap[idOrLng]
+      if (!item || typeof item !== 'object') continue
+      if (lngList.includes(idOrLng as any)) {
+        for (let id in item) {
+          this.languagesMap[id] ||= {}
+          this.languagesMap[id][idOrLng] = item[id]
         }
-      } else if (typeof item === 'object') {
-        this.languagesMap[id] = {
-          ...this.languagesMap[id],
-          ...item,
+      } else {
+        for (let lng in item) {
+          this.languagesMap[idOrLng] ||= {}
+          this.languagesMap[idOrLng][lng] = item[lng]
         }
       }
     }
