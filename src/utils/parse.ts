@@ -3,7 +3,7 @@ import * as t from '@babel/types'
 import { parse } from '@babel/parser'
 import { NodePath } from '@babel/traverse'
 import type Traverse from '@babel/traverse'
-import type Generator from '@babel/generator'
+import type generate from '@babel/generator'
 import { createRequire } from 'node:module'
 
 import { logger } from './logger'
@@ -15,7 +15,7 @@ export const resolveTraverse = (): typeof Traverse => {
   if (res.default) res = res.default
   return res
 }
-export const resolveGenerator = (): Generator => {
+export const resolveGenerator = (): typeof generate => {
   let res = _require('@babel/generator')
   if (res.default) res = res.default
   return res
