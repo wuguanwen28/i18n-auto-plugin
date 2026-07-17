@@ -1,0 +1,12 @@
+/src
+/.vscode
+/examples
+/node_modules
+pnpm-lock.yaml
+rolldown.config.ts
+prettier.config.js
+tsconfig.json
+.gitignore
+.npmignore
+BUGS.md
+CLAUDE.md
