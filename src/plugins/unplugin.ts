@@ -48,10 +48,14 @@ export const I18nAuto = createUnplugin<Options | undefined>((options) => {
     },
 
     transform(code, id) {
+      // 用结构化 loc 交给构建工具格式化（vite dev 显示 File/Line，
+      // rollup build 自动加 "file (line:column)" 前缀），
+      // 消息体内不再拼路径，避免 build 下与 rollup 前缀重复
       const emitWarning = ({ text, line, column }: any) => {
-        this.warn(
-          `在语料库中未发现该文本【${sliceText(text)}】请更新语料库 (${id}:${line}:${column})`,
-        )
+        this.warn({
+          message: `在语料库中未发现该文本【${sliceText(text)}】请更新语料库`,
+          loc: { file: id, line, column },
+        } as any)
       }
 
       const importInfo = {

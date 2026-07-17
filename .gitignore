@@ -30,3 +30,5 @@ examples/**/locale
 examples/**/i18n.config.js
 examples/**/build
 examples/**/dist
+
+.playwright-cli/
