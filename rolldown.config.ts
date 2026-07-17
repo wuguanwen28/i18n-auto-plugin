@@ -23,18 +23,18 @@ const replacePlugin = () =>
     },
   })
 
-// 编译时代码的外部依赖（不打进产物）；运行时代码无任何依赖，不需要
+// 编译时代码的外部依赖（不打进产物）
+// 注意：unplugin 必须 external —— 它通过 import.meta.dirname 定位
+// 自身的 webpack loader 文件，打进 bundle 会破坏该路径解析
 const external = ['vite', 'webpack', ...Object.keys(pkg.dependencies)]
 
 /**
  * 打包分为三类运行环境：
  * 1. 浏览器运行时（src/index.ts）—— 用户页面中执行，禁止出现 node 依赖
- * 2. Node ESM —— bin 命令行 + vite/webpack 插件（编译时）
- * 3. Node CJS —— vite/webpack 插件 + webpack loader（兼容 CJS 项目）
+ * 2. Node ESM —— bin 命令行 + 构建插件（vite/webpack，基于 unplugin）
+ * 3. Node CJS —— 构建插件（兼容 CJS 的 webpack/vite 配置文件）
  *
- * webpack loader 特殊：必须是 CJS 格式，且 ESM/CJS 两份插件产物都通过
- * require.resolve('./webpack-loader.cjs') 引用它，因此 dist/ 和 dist/cjs/
- * 各需要一份 loader（见 loaderForEsmDist）。
+ * webpack 的 loader 注入由 unplugin 内部处理，本包不再产出 loader。
  */
 
 // 1) 浏览器运行时
@@ -50,7 +50,7 @@ const runtimeConfig = defineConfig({
   plugins: [dts(), replacePlugin()],
 })
 
-// 2) Node ESM：bin + 编译时插件
+// 2) Node ESM：bin + 构建插件
 const nodeEsmConfig = defineConfig({
   platform: 'node',
   input: {
@@ -70,13 +70,14 @@ const nodeEsmConfig = defineConfig({
   plugins: [dts(), replacePlugin()],
 })
 
-// 3) Node CJS：编译时插件 + loader
+// 3) Node CJS：构建插件（require 方式加载的 webpack/vite 配置）
+//    unplugin 为 ESM-only，CJS 产物通过 require(esm) 加载它，
+//    需要 Node >= 20.19 / 22.12
 const nodeCjsConfig = defineConfig({
   platform: 'node',
   input: {
     'vite-plugin': resolve('./src/plugins/vite/plugin.ts'),
     'webpack-plugin': resolve('./src/plugins/webpack/plugin.ts'),
-    'webpack-loader': resolve('./src/plugins/webpack/loader.ts'),
   },
   output: {
     dir: './dist/cjs',
@@ -88,24 +89,8 @@ const nodeCjsConfig = defineConfig({
   plugins: [replacePlugin()],
 })
 
-// 4) 给 ESM 产物目录补一份 CJS loader
-//    修复：dist/webpack-plugin.js 中 require.resolve('./webpack-loader.cjs') 找不到文件
-const loaderForEsmDist = defineConfig({
-  platform: 'node',
-  input: { 'webpack-loader': resolve('./src/plugins/webpack/loader.ts') },
-  output: {
-    dir: './dist',
-    format: 'cjs',
-    entryFileNames: '[name].cjs',
-    chunkFileNames: 'chunks/[name]-loader.cjs',
-  },
-  external,
-  plugins: [replacePlugin()],
-})
-
 export default defineConfig([
   runtimeConfig,
   nodeEsmConfig,
   nodeCjsConfig,
-  loaderForEsmDist,
 ]) as ConfigExport

@@ -5,7 +5,7 @@
 
 ## 🔴 严重
 
-### 1. ESM 版 webpack 插件加载即崩溃 ✅
+### 1. ESM 版 webpack 插件加载即崩溃 ✅ 【已修复：迁移 unplugin 后 loader 由 unplugin 管理】
 - **位置**：`src/plugins/webpack/plugin.ts:14` + `rolldown.config.ts`
 - **现象**：`import 'i18n-auto-plugin/webpack'`（webpack.config.mjs / `"type": "module"` 项目）直接抛 `Cannot find module './webpack-loader.cjs'`
 - **原因**：`static loader = require.resolve('./webpack-loader.cjs')` 是类静态字段，import 时立即求值；但 rolldown 只把 webpack-loader 输出到 `dist/cjs/`，ESM 产物 `dist/webpack-plugin.js` 同目录下没有该文件
@@ -38,7 +38,7 @@
 
 ## 🟡 中等
 
-### 6. webpack 插件 `isHasLoader` 假设 `rule.use` 为数组
+### 6. webpack 插件 `isHasLoader` 假设 `rule.use` 为数组 【已修复：迁移 unplugin 后该代码已删除】
 - **位置**：`src/plugins/webpack/plugin.ts:20`
 - **现象**：遇到 `use: 'babel-loader'`（字符串写法）时 `rule?.use?.some` 调用 undefined → TypeError，构建崩溃
 - **修复**：加 `Array.isArray(rule.use)` 判断

@@ -1,47 +1,8 @@
 import type { Plugin } from 'vite'
-import { I18nPlugin } from '../core'
-import { Configuration, LanguagesMapById } from '../../types'
-import {
-  createFilter,
-  getConfiguration,
-  readLanguagesMap,
-  sliceText,
-} from '../../utils'
-
-type Options = {
-  configPath?: string
-  warn?: boolean
-}
+import { I18nAuto, Options } from '../unplugin'
 
 export function i18nAutoPlugin(options?: Options): Plugin {
-  const { configPath = '' } = options || {}
-  let config: Configuration | null
-  let filter: ReturnType<typeof createFilter>
-  let lngMap: LanguagesMapById | { [id: string]: string } = {}
-  return {
-    name: 'vite-plugin-i18n-auto',
-    configResolved() {
-      config = getConfiguration(configPath)
-      filter = createFilter(config)
-      if (config) lngMap = readLanguagesMap(config) || {}
-    },
-    transform: function (code: string, id: string) {
-      if (!/node_modules/.test(id) && filter(id) && config) {
-        let res = I18nPlugin({
-          code: code,
-          filePath: id,
-          config: config,
-          lngMap: lngMap,
-          emitWarning: ({ text, line, column }) => {
-            this.warn(
-              `在语料库中未发现该文本【${sliceText(text)}】请更新语料库`,
-              { line, column },
-            )
-          },
-        })
-        if (res) return res
-      }
-      return { code, map: null }
-    },
-  }
+  return I18nAuto.vite(options) as Plugin
 }
+
+export default i18nAutoPlugin

@@ -15,17 +15,18 @@ i18n-auto-plugin 是一个自动国际化工具：扫描项目中的中文文本
 
 ## Build Setup (rolldown.config.ts)
 
-按运行环境分为四个构建配置：
+按运行环境分为三个构建配置：
 
 1. **浏览器运行时**（`src/index.ts` → `dist/index.js`，platform: browser）— 用户页面执行，禁止引入 node 依赖
 2. **Node ESM**（bin、vite-plugin、webpack-plugin → `dist/`）
-3. **Node CJS**（vite-plugin、webpack-plugin、webpack-loader → `dist/cjs/`）
-4. **ESM 目录的 loader 副本**（webpack-loader → `dist/webpack-loader.cjs`）— 因为 ESM/CJS 两份 webpack-plugin 产物都用 `require.resolve('./webpack-loader.cjs')` 相对引用 loader（src/plugins/webpack/plugin.ts:14），两个产物目录各需一份
+3. **Node CJS**（vite-plugin、webpack-plugin → `dist/cjs/`）
 
 其他要点：
+- **插件层基于 unplugin**：`src/plugins/unplugin.ts` 是唯一实现（transformInclude + transform），`vite/plugin.ts` 和 `webpack/plugin.ts` 只是一行封装。webpack 的 loader 注入由 unplugin 内部处理，本包不产出 loader。
+- **unplugin 必须保持 external**：它通过 `import.meta.dirname` 定位自身的 loader 文件，打进 bundle 会破坏路径解析。unplugin 为 ESM-only，CJS 产物靠 Node 的 require(esm) 加载它（要求 Node >= 20.19 / 22.12）。
 - package.json `exports` 映射 `./vite` 和 `./webpack` 子路径，import/require 双条件。
 - `__NAME__` 和 `__VERSION__` 是构建期由 @rollup/plugin-replace 注入的全局占位符（源码中直接使用，见 src/types/global.d.ts）。修改包名/版本无需改源码。
-- 改动构建后验证方式：`node --input-type=module -e "await import('./dist/webpack-plugin.js')"` 及 CJS 对应版本，确认插件产物能加载、`loader` 静态字段能 resolve。
+- 改动构建后验证方式：ESM/CJS 分别加载两个插件产物确认不抛错，然后跑 `examples/react-vite`（`npx vite build`）和 `examples/react-webpack`（`pnpm build`），在产物中确认中文被替换为 `xx("<16位hash>")` 调用。
 - 已知 bug 清单见 BUGS.md。
 
 ## Architecture
@@ -34,7 +35,7 @@ i18n-auto-plugin 是一个自动国际化工具：扫描项目中的中文文本
 
 1. **CLI 扫描/翻译**（`src/bin/i18n.ts` → `src/commands/Translate.ts`）：Node 侧运行。扫描入口文件 → babel AST 提取中文（JSXText / StringLiteral / TemplateLiteral）→ 以文本的 sha256 前 16 位为 id（`getHash`，src/utils/index.ts）→ 合并新旧语料 → 调翻译服务 → 写语言包 JSON。文件级缓存在 `node_modules/.cache/i18n-auto-plugin`（src/utils/ceche.ts，按 mtime+内容 hash 失效）。
 
-2. **构建插件**（`src/plugins/`）：`core.ts` 的 `I18nPlugin` 是共享的 AST 转换核心 — 把中文字符串替换为 `_i18n(hash)` 调用并自动插入 import。`vite/plugin.ts` 和 `webpack/plugin.ts` + `webpack/loader.ts` 是对它的薄封装。只替换语料库（lngMap）中已存在的文本，不存在时发 warning 提示更新语料库。
+2. **构建插件**（`src/plugins/`）：`core.ts` 的 `I18nPlugin` 是共享的 AST 转换核心 — 把中文字符串替换为 `_i18n(hash)` 调用并自动插入 import。`unplugin.ts` 用 createUnplugin 将其适配到各构建工具，`vite/plugin.ts`、`webpack/plugin.ts` 是入口封装。只替换语料库（lngMap）中已存在的文本，不存在时发 warning 提示更新语料库。
 
 3. **运行时**（`src/index.ts`）：浏览器侧的 `I18nManager` — 维护语言映射、`i18n()` 翻译函数、`changeLanguage`（写 localStorage 并 reload）。插值语法为 `{{key}}`，模板字符串的表达式在扫描期被替换为 `{{@1}}`、`{{@2}}` 占位符（`tplRegexp`）。
 

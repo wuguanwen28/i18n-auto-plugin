@@ -1,50 +1,11 @@
-import { Compiler } from 'webpack'
-import { createFilter, getConfiguration, readLanguagesMap } from '../../utils'
+import { I18nAuto, Options } from '../unplugin'
 
-type I18nAutoWebpackPluginOptions = {
-  configPath?: string
-}
-
-class I18nAutoWebpackPlugin {
-  options: I18nAutoWebpackPluginOptions = {}
-  constructor(options: I18nAutoWebpackPluginOptions = {}) {
-    this.options = options
-  }
-
-  static loader = require.resolve('./webpack-loader.cjs')
-
-  apply(compiler: Compiler) {
-    const isHasLoader = (rules: any[]) => {
-      if (!rules) return false
-      return rules.some((rule) => {
-        return rule?.use?.some(
-          (use) => use?.loader === I18nAutoWebpackPlugin.loader,
-        )
-      })
-    }
-
-    const { configPath = '' } = this.options
-
-    const config = getConfiguration(configPath)
-
-    if (!config) return
-
-    const filter = createFilter(config)
-    const lngMap = readLanguagesMap(config)
-
-    compiler.hooks.environment.tap('I18nAutoWebpackPlugin', () => {
-      let rules = compiler.options?.module?.rules
-
-      if (!isHasLoader(rules)) {
-        const options = { config, lngMap, filter }
-        compiler.options.module.rules.push({
-          enforce: 'post',
-          test: new RegExp(config.test),
-          use: [{ loader: I18nAutoWebpackPlugin.loader, options }],
-        })
-      }
-    })
-  }
+/**
+ * 兼容 `new I18nAutoWebpackPlugin()` 与 `I18nAutoWebpackPlugin()` 两种调用方式
+ * （函数被 new 调用时返回对象即为构造结果）
+ */
+function I18nAutoWebpackPlugin(options?: Options) {
+  return I18nAuto.webpack(options)
 }
 
 export default I18nAutoWebpackPlugin
