@@ -1,12 +1,12 @@
 import type { Plugin } from 'vite'
-import { I18nPlugin } from './core'
-import { Configuration, LanguagesMap } from '../types'
+import { I18nPlugin } from '../core'
+import { Configuration, LanguagesMapById } from '../../types'
 import {
   createFilter,
   getConfiguration,
   readLanguagesMap,
   sliceText,
-} from '../utils'
+} from '../../utils'
 
 type Options = {
   configPath?: string
@@ -17,7 +17,7 @@ export function i18nAutoPlugin(options?: Options): Plugin {
   const { configPath = '' } = options || {}
   let config: Configuration | null
   let filter: ReturnType<typeof createFilter>
-  let lngMap: LanguagesMap | { [id: string]: string } = {}
+  let lngMap: LanguagesMapById | { [id: string]: string } = {}
   return {
     name: 'vite-plugin-i18n-auto',
     configResolved() {
