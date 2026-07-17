@@ -91,7 +91,7 @@ export class Translate {
         const filePath = outputMap[lng]
         if (filePath && fs.existsSync(filePath)) {
           const content = await resolveFile(filePath)
-          this.mergeLanguagesMap({ lng: content })
+          this.mergeLanguagesMap({ [lng]: content })
         }
       }
     }

@@ -12,7 +12,7 @@
 - **影响面**：仅 ESM 方式使用 webpack 插件的用户；CJS `require` 用户不受影响
 - **修复方向**：打包系统重构中解决（loader 与插件产物同目录，或惰性 getter + 路径回退）
 
-### 2. `getOldLanguagesMap` 对象字面量键写错 ✅（代码明显笔误）
+### 2. `getOldLanguagesMap` 对象字面量键写错 ✅【已修复：`{ [lng]: content }`，splitLngFile 模式实测旧翻译不再丢失】
 - **位置**：`src/commands/Translate.ts:93`
 - **现象**：`this.mergeLanguagesMap({ lng: content })` —— 键是字符串 `"lng"`，不是变量插值
 - **后果**：`splitLngFile: true` 模式下旧翻译全部加载失败 → 每次全量重新翻译（浪费 API 费用）；且语料库中产生 id 为 `"lng"` 的垃圾条目
