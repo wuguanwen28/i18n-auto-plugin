@@ -1,5 +1,3 @@
-import { TranslateServiceType } from '../types'
-
 /**
  * 比对同一原文的多个服务译文,判定多数一致与建议值
  * @param translations 各服务译文,key 为服务名;译文中空值/undefined 不参与统计

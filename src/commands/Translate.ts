@@ -15,6 +15,7 @@ import {
   time,
 } from '../utils'
 import translatorMap, { BaiduTranslator } from '../translators'
+import type { Translator } from '../translators/Translator'
 import {
   Configuration,
   LanguagesMap,
@@ -23,6 +24,7 @@ import {
   LoggerLevel,
   OutputMap,
   TranslateOptions,
+  TranslateServiceType,
 } from '../types'
 import { DEFAULT_CONFIG, DEFAULT_EXCLUDE_CALL, lngList } from '../utils/config'
 import { logger } from '../utils/logger'
@@ -237,11 +239,56 @@ export class Translate {
   /** 翻译 */
   async translate() {
     const { translateService = 'baidu' } = this.config
-    const Translator = translatorMap[translateService] || BaiduTranslator
-    const translator = new Translator(this)
-    await translator.run((lng) => {
+    const services = Array.isArray(translateService)
+      ? translateService
+      : [translateService]
+
+    // 校验:每个所选服务都要有对应配置
+    this.validateTranslateServices(services)
+
+    // 为每个服务创建 Translator 实例,共享同一个 languagesMap
+    const serviceTranslators: Partial<
+      Record<TranslateServiceType, Translator>
+    > = {}
+    let primaryTranslator: Translator | null = null
+    for (const svc of services) {
+      const TranslatorCtor = translatorMap[svc] || BaiduTranslator
+      const t = new TranslatorCtor(this)
+      serviceTranslators[svc] = t
+      if (!primaryTranslator) primaryTranslator = t
+    }
+
+    // 把所有服务实例注入主翻译器,runMulti 通过它调用各服务
+    primaryTranslator!.serviceTranslators = serviceTranslators
+    await primaryTranslator!.run((lng) => {
       this.writeLanguagesMap(lng)
     })
+  }
+
+  /** 校验所选服务均已配置密钥,缺失则报错退出 */
+  private validateTranslateServices(services: TranslateServiceType[]) {
+    const { config } = this
+    const missing: string[] = []
+    for (const svc of services) {
+      const hasConfig =
+        (svc === 'baidu' && config.baidu?.appId && config.baidu?.appKey) ||
+        (svc === 'baiduAi' &&
+          config.baiduAi?.appId &&
+          (config.baiduAi?.appKey || config.baiduAi?.apiKey)) ||
+        (svc === 'youdao' && config.youdao?.appId && config.youdao?.appKey) ||
+        (svc === 'youdaoAi' &&
+          config.youdaoAi?.appId &&
+          config.youdaoAi?.appKey) ||
+        svc === 'custom' ||
+        svc === 'google'
+      if (!hasConfig) missing.push(svc)
+    }
+    if (missing.length) {
+      logger.error(
+        `translateService 含 ${missing.join(', ')},但未配置对应的密钥,请补全配置`,
+      )
+      process.exit(0)
+    }
   }
 
   /** 合并语言映射 */
