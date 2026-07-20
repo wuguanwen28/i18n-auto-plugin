@@ -45,7 +45,7 @@ i18n-auto-plugin 是一个自动国际化工具：扫描项目中的中文文本
 - **扫描（Translate.ts）和转换的文本规范化必须保持一致**：js/ts 侧两边走同一套 babel visitor（JSXText/StringLiteral/TemplateLiteral 的 trim、模板占位符替换），.vue template 侧两边走同一个 `walkVueTemplate`，否则 hash 对不上，转换时会找不到语料。已知限制：模板内 JS 表达式（`{{ '中文' }}`、`:label="'中文'"`）暂不处理，两侧一致跳过。
 - **语言包两种格式**（src/types/index.d.ts）：`LanguagesMapById`（`{id: {lng: text}}`，splitLngFile=false 的单文件格式）和 `LanguagesMapByLocale`（`{lng: {id: text}}`，分文件格式）。`mergeLanguagesMap` / `extendLocale` 通过判断 key 是否在 `lngList` 中区分两种格式。
 - **翻译器**（src/translators/）：抽象基类 `Translator` 处理分批（batchSize）、跳过已翻译、换行符转义（`✅✅` 占位）；子类只实现 `requestTranslate`。新增翻译服务需在 `translators/index.ts` 的 map 注册并在 types 中扩展 `TranslateServiceType`。
-- **配置**：cosmiconfig 按 `i18n` 名称搜索（默认 `i18n.config.js`），`DEFAULT_CONFIG` 在 src/utils/config.ts。`Configuration` 类型是 normalize 后的（entry/include/exclude 转数组、加 `__rootPath`）。
+- **配置**：cosmiconfig 按 `i18n` 名称搜索（默认 `i18n.config.js`），`DEFAULT_CONFIG` 在 src/utils/config.ts。`Configuration` 类型是 normalize 后的（entry/include/exclude 转数组、加 `__rootPath`）。配置查找为向上查找（cosmiconfig `searchStrategy: 'global'`，monorepo 子包可命中根配置，entry/output 相对执行目录 `process.cwd()` 解析）；支持 `extends` 文件路径继承（相对声明文件所在目录解析，仅纯对象深合并、其余子值覆盖，见 src/utils/merge.ts）。
 
 ## Conventions
 

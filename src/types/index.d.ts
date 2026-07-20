@@ -135,6 +135,12 @@ export type BaiduAiTranslateServiceConfig = Omit<
 
 export interface I18nConfig {
   /**
+   * 继承另一个配置文件（仅支持文件路径，不支持 npm 包名）
+   * 相对路径相对于「声明 extends 的配置文件所在目录」解析（与 tsconfig 一致）
+   * 注意：entry/output 等相对路径始终相对执行目录解析，与此解析基准不同
+   */
+  extends?: string
+  /**
    * 入口文件夹路径
    */
   entry: string | string[]
@@ -253,7 +259,7 @@ export interface I18nConfig {
 
 export type Configuration = Omit<
   Required<I18nConfig>,
-  'include' | 'exclude' | 'entry'
+  'include' | 'exclude' | 'entry' | 'extends'
 > & {
   entry: string[]
   include: string[]

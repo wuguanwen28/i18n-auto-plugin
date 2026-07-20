@@ -5,6 +5,8 @@ import path from 'node:path'
 import prettier from 'prettier'
 import crypto from 'node:crypto'
 import { cosmiconfigSync } from 'cosmiconfig'
+import { deepMerge } from './merge'
+import { logger } from './logger'
 import { Configuration, LanguagesMapById, LngType, OutputMap } from '../types'
 
 export const getPrettierConfig = async (filePath?: string) => {
@@ -38,29 +40,94 @@ export const toArray = <T = any>(value?: T | T[]) => {
   return value ? [value] : []
 }
 
-export const resolveFile = (filePath: string = '', name = '') => {
-  if (!fs.existsSync(filePath) && !name) return
+export const resolveFileWithPath = (
+  filePath: string = '',
+  name = '',
+): { config: any; filepath: string } | null => {
+  if (!fs.existsSync(filePath) && !name) return null
 
   const rootPath = process.cwd()
   const searchFrom = filePath ? path.dirname(filePath) : rootPath
   const searchPlaces = filePath ? [path.basename(filePath)] : undefined
 
-  const explorerSync = cosmiconfigSync(name, { searchPlaces })
+  // searchStrategy: 'global' 支持 monorepo：从执行目录一路向上查找配置
+  const explorerSync = cosmiconfigSync(name, {
+    searchPlaces,
+    searchStrategy: 'global',
+  })
   const searchedRes = explorerSync.search(searchFrom)
   if (!searchedRes?.config) return null
 
-  let res = searchedRes.config
-  if (res.__esModule && res['default']) {
-    return res['default']
+  let config = searchedRes.config
+  if (config.__esModule && config['default']) {
+    config = config['default']
   }
 
-  return res
+  return { config, filepath: searchedRes.filepath }
+}
+
+export const resolveFile = (filePath: string = '', name = '') => {
+  return resolveFileWithPath(filePath, name)?.config
+}
+
+/**
+ * 递归解析 extends 继承链，自底向上合并
+ * @param config 当前配置
+ * @param baseDir 当前配置文件所在目录（extends 相对路径的解析基准）
+ * @param visited 已访问的配置文件绝对路径，用于环检测
+ */
+const resolveExtends = (
+  config: any,
+  baseDir: string,
+  visited: Set<string>,
+): any => {
+  if (!config?.extends) return config
+  if (typeof config.extends !== 'string') {
+    throw new Error('extends 仅支持字符串文件路径')
+  }
+
+  const extendsPath = path.resolve(baseDir, config.extends)
+  if (visited.has(extendsPath)) {
+    throw new Error(
+      `extends 配置成环: ${[...visited, extendsPath].join(' -> ')}`,
+    )
+  }
+  if (!fs.existsSync(extendsPath)) {
+    throw new Error(`extends 指向的配置文件不存在: ${extendsPath}`)
+  }
+  visited.add(extendsPath)
+
+  const parentRes = resolveFileWithPath(extendsPath)
+  const parentConfig = resolveExtends(
+    parentRes?.config || {},
+    path.dirname(extendsPath),
+    visited,
+  )
+
+  const merged = deepMerge(parentConfig, config)
+  delete merged.extends
+  return merged
 }
 
 // 获取配置文件
 export const getConfiguration = (filePath?: string): Configuration | null => {
-  const config = resolveFile(filePath, 'i18n')
-  if (!config) return null
+  const searchedRes = resolveFileWithPath(filePath, 'i18n')
+  if (!searchedRes) return null
+
+  let config = searchedRes.config
+  try {
+    config = resolveExtends(
+      config,
+      path.dirname(searchedRes.filepath),
+      new Set([searchedRes.filepath]),
+    )
+  } catch (error) {
+    logger.error(error as Error)
+    return null
+  }
+
+  // __rootPath 固定为执行目录：同一份根配置在不同子包下执行时，
+  // entry/output 等相对路径各自相对子包目录解析
   config.__rootPath = process.cwd()
   config.entry = toArray(config.entry)
   config.include = toArray(config.include)
