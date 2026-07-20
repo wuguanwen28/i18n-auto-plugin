@@ -133,7 +133,7 @@ export class Translate {
   /** 扫描文件中的目标语言 */
   scanTargetLang(filePath: string) {
     let languagesMap: LanguagesMapById | null = null
-    if (this.config.cache) languagesMap = cacheManager.getCache(filePath)
+    if (this.config.cache) languagesMap = cacheManager.getCache(filePath, this.config)
 
     if (!languagesMap) {
       logger.info(`发现文件(${++this.count}): ${filePath}`)
@@ -195,7 +195,7 @@ export class Translate {
       languagesMap = result
     }
     if (this.config.cache) {
-      cacheManager.setCache(filePath, languagesMap)
+      cacheManager.setCache(filePath, languagesMap, this.config)
     }
 
     this.mergeLanguagesMap(languagesMap)
