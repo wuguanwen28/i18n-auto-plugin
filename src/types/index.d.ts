@@ -14,6 +14,10 @@ export type TranslateOptions = {
    * 配置文件路径
    */
   config?: string
+  /**
+   * 是否使用文件缓存(--no-cache 时为 false,覆盖配置中的 cache)
+   */
+  cache?: boolean
 }
 
 export type LoggerLevel = 'error' | 'warn' | 'info' | 'none'

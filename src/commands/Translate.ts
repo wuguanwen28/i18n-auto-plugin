@@ -39,6 +39,9 @@ const traverse = resolveTraverse()
 export class Translate {
   customConfigPath?: string
 
+  /** CLI --no-cache 时为 false,覆盖配置中的 cache */
+  cliCache?: boolean
+
   config!: Configuration
 
   count = 0
@@ -49,6 +52,7 @@ export class Translate {
 
   constructor(options: TranslateOptions = {}) {
     this.customConfigPath = options.config
+    this.cliCache = options.cache
   }
 
   async run() {
@@ -77,6 +81,9 @@ export class Translate {
       process.exit(0)
     }
     this.config = { ...DEFAULT_CONFIG, ...config }
+    // cac 声明 --no-cache 后未传参也会得到 cache: true,
+    // 因此仅在显式传入 --no-cache(false)时覆盖配置
+    if (this.cliCache === false) this.config.cache = false
     this.outputMap = getOutputMap(this.config)
     logger.setLogLevel(this.config.logger)
   }
