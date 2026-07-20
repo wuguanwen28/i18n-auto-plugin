@@ -149,12 +149,22 @@ export const createFilter = (config?: Configuration | null) => {
     include = ['src'],
     exclude = ['node_modules'],
     test = '.*(js|jsx|ts|tsx|vue)$',
+    output,
     __rootPath = process.cwd(),
   } = config || {}
 
   const ig = ignore().add(exclude)
   const inc = ignore().add(include)
   const testRegex = test ? new RegExp(test) : null
+
+  // 输出目录是产物(语言包/注册文件),不参与扫描与转换,
+  // 否则语言包 JS/注册文件中的中文会被当作语料重新扫回
+  const outDir = output?.dir
+    ? path
+        .relative(__rootPath, path.resolve(__rootPath, output.dir))
+        .replace(/\\/g, '/')
+    : ''
+  if (outDir && !outDir.startsWith('.')) ig.add(outDir)
 
   function filter(pathname: string) {
     const relativePath = path.relative(__rootPath, pathname)
