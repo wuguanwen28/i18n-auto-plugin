@@ -212,6 +212,12 @@ export interface I18nConfig {
      * @default true
      */
     registerFile?: boolean | string
+    /**
+     * 多服务校验差异报告文件名,相对 output.dir
+     * 仅 translateService 为数组时生效
+     * @default 'diff.json'
+     */
+    diffFile?: string
   }
   /**
    * 是否开启缓存，如文件没有变化，不会重复解析
@@ -275,8 +281,11 @@ export interface I18nConfig {
   batchSize?: number
   /**
    * 翻译服务
+   * - 单值:走标准翻译流程,写语言包
+   * - 数组:多服务校验模式,各服务并行翻译同一批文本,
+   *   比对差异产出报告,并按 suggested(多数一致/首个)落盘语言包
    */
-  translateService: TranslateServiceType
+  translateService: TranslateServiceType | TranslateServiceType[]
   /**
    * 百度通用文本翻译配置
    */
@@ -323,3 +332,20 @@ export type Configuration = Omit<
 export type OutputMap = {
   [key in LngType | 'main']?: string
 }
+
+/** 差异报告单条:某原文的各服务译文与建议值 */
+export type DiffReportItem = {
+  /** 中文原文 */
+  text: string
+  /** 语料 hash,回溯语料库 */
+  id: string
+  /** 各服务译文,key 为服务名;失败的服务缺该 key */
+  translations: Partial<Record<TranslateServiceType, string>>
+  /** 建议值(多数一致或首个服务译文),已落盘到语言包 */
+  suggested: string
+  /** 是否多数一致 */
+  consensus: boolean
+}
+
+/** 差异报告:按目标语种分组 */
+export type DiffReport = Partial<Record<LngType, DiffReportItem[]>>
