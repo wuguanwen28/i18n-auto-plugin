@@ -30,7 +30,7 @@ import {
   tplRegexp,
 } from '../utils/config'
 import { logger } from '../utils/logger'
-import { cacheManager } from '../utils/ceche'
+import { cacheManager } from '../utils/cache'
 import { isAllowTranslate, parseAst, resolveTraverse } from '../utils/parse'
 import { extractVueSfc } from '../plugins/vue-sfc'
 import { generateRegisterFile } from './RegisterFile'

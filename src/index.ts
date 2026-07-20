@@ -62,7 +62,9 @@ export class I18nManager {
   private _format(str: string, data?: object) {
     return str.replace(/(\\)?\{\{([\s\S]+?)\}\}/g, (_, escape, key) => {
       if (escape) return _.substring(1)
-      return (data || {})[key]
+      // data 中缺失的 key 保留原占位符,避免输出字面量 "undefined"
+      const val = (data || {})[key]
+      return val === undefined ? `{{${key}}}` : String(val)
     })
   }
 

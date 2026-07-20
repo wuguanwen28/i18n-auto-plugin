@@ -235,9 +235,29 @@ export function mkdirSync(dirname: string) {
   }
 }
 
+/**
+ * 按文件扩展名 + 项目 package.json type 决定模块导出前缀
+ * - .json:无
+ * - .cjs:module.exports =
+ * - .js:读执行目录 package.json,type=module 用 export default,否则 module.exports =
+ *   (CJS 项目里生成 export default 会导致 cosmiconfig require 加载 SyntaxError)
+ * - .mjs/其他:export default
+ */
 export function getExportPrefix(filePath: string) {
   if (filePath?.endsWith('.json')) return ''
   if (filePath?.endsWith('.cjs')) return 'module.exports = '
+  if (filePath?.endsWith('.js')) {
+    try {
+      const pkgPath = path.resolve(process.cwd(), 'package.json')
+      if (fs.existsSync(pkgPath)) {
+        const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'))
+        if (pkg.type === 'module') return 'export default '
+      }
+      return 'module.exports = '
+    } catch {
+      return 'module.exports = '
+    }
+  }
   return 'export default '
 }
 
