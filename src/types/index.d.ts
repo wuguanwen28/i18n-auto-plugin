@@ -321,11 +321,13 @@ export interface I18nConfig {
 
 export type Configuration = Omit<
   Required<I18nConfig>,
-  'include' | 'exclude' | 'entry' | 'extends'
+  'include' | 'exclude' | 'entry' | 'extends' | 'translateService'
 > & {
   entry: string[]
   include: string[]
   exclude: string[]
+  /** 归一化后总是数组(单值已转为单元素数组) */
+  translateService: TranslateServiceType[]
   __rootPath: string
 }
 

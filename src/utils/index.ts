@@ -132,6 +132,8 @@ export const getConfiguration = (filePath?: string): Configuration | null => {
   config.entry = toArray(config.entry)
   config.include = toArray(config.include)
   config.exclude = toArray(config.exclude)
+  // translateService 归一化为数组:单值转单元素数组,消费方统一按数组处理
+  config.translateService = toArray(config.translateService)
 
   // 兼容旧字段 output.file（已更名为 lngFile），下个版本移除
   if (config.output?.file && !config.output.lngFile) {

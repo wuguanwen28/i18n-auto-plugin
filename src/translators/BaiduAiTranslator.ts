@@ -16,7 +16,8 @@ export class BaiduAiTranslator extends BaiduTranslator {
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, baiduAi } = options.config || {}
-    if (translateService === 'baiduAi') {
+    // translateService 已归一化为数组,包含本服务即认领配置
+    if (translateService.includes('baiduAi')) {
       if (!baiduAi?.appId || (!baiduAi?.appKey && !baiduAi?.apiKey)) {
         throw new Error(`请配置${this.name}的appId和appKey或apiKey`)
       }

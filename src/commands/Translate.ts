@@ -238,10 +238,8 @@ export class Translate {
 
   /** 翻译 */
   async translate() {
-    const { translateService = 'baidu' } = this.config
-    const services = Array.isArray(translateService)
-      ? translateService
-      : [translateService]
+    const { translateService } = this.config
+    const services = translateService
 
     // 校验:每个所选服务都要有对应配置
     this.validateTranslateServices(services)

@@ -26,7 +26,8 @@ export class YoudaoTranslator extends Translator {
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, youdao } = options.config || {}
-    if (translateService === 'youdao') {
+    // translateService 已归一化为数组,包含本服务即认领配置
+    if (translateService.includes('youdao')) {
       if (!youdao?.appId || !youdao?.appKey) {
         throw new Error(`请配置${this.name}的appId和appKey`)
       }

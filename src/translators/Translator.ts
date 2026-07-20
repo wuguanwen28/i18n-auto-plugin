@@ -27,14 +27,15 @@ export abstract class Translator {
   }
 
   /**
-   * 运行翻译:按 translateService 是否数组分流
+   * 运行翻译:按服务数量分流
+   * 单服务(length<=1)走 runSingle,多服务(校验模式)走 runMulti
    * @param callback 每翻译完一个语种后的回调函数
    */
   async run(
     callback?: (langMap: LngType) => void | Promise<any>,
   ): Promise<LanguagesMapById> {
     const { translateService } = this.config
-    if (Array.isArray(translateService)) {
+    if (translateService.length > 1) {
       return await this.runMulti(callback)
     }
     return await this.runSingle(callback)
@@ -84,7 +85,7 @@ export abstract class Translator {
     callback?: (langMap: LngType) => void | Promise<any>,
   ): Promise<LanguagesMapById> {
     const { languages, originLang = 'zh-CN', translateService } = this.config
-    const services = translateService as TranslateServiceType[]
+    const services = translateService
     const primaryService = services[0]
     const diffReport: DiffReport = {}
 
