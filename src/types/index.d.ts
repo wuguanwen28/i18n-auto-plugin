@@ -82,6 +82,7 @@ export type TranslateServiceType =
   | 'baidu'
   | 'baiduAi'
   | 'youdao'
+  | 'youdaoAi'
   | 'custom'
 
 export type TranslateServiceConfig = {
@@ -143,6 +144,26 @@ export type BaiduAiTranslateServiceConfig = Omit<
    * - 仅在 model_type = 'nmt'，且 tag_handling = 1 时生效
    */
   ignore_tags?: string[]
+}
+
+/** 有道大模型文本翻译配置 */
+export type YoudaoAiTranslateServiceConfig = TranslateServiceConfig & {
+  /**
+   * 处理模式(模型选择)
+   * - 0:子曰翻译 pro 版本(14B)
+   * - 3:子曰翻译 lite 版本(1.5B)
+   * @default 0
+   */
+  handleOption?: 0 | 3
+  /**
+   * 提示词,限 1200 字符 / 400 单词,仅对 handleOption=0/3 生效
+   * 如"使用学术风格翻译"
+   */
+  prompt?: string
+  /**
+   * 用户上传的术语表 ID(out_id),支持英中互译,更多语种方向前往控制台查询
+   */
+  vocabId?: string
 }
 
 export interface I18nConfig {
@@ -268,6 +289,11 @@ export interface I18nConfig {
    * 有道翻译配置
    */
   youdao?: TranslateServiceConfig
+  /**
+   * 有道大模型文本翻译配置
+   * 接口为流式 SSE 返回,一次请求翻译一批文本(用占位符拼接)
+   */
+  youdaoAi?: YoudaoAiTranslateServiceConfig
 
   /**
    * 自定义翻译器
