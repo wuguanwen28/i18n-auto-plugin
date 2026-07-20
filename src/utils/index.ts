@@ -133,6 +133,14 @@ export const getConfiguration = (filePath?: string): Configuration | null => {
   config.include = toArray(config.include)
   config.exclude = toArray(config.exclude)
 
+  // 兼容旧字段 output.file（已更名为 lngFile），下个版本移除
+  if (config.output?.file && !config.output.lngFile) {
+    config.output.lngFile = config.output.file
+    logger.warn(
+      'output.file 已更名为 output.lngFile，旧字段将在后续版本移除，请更新配置',
+    )
+  }
+
   return config
 }
 
@@ -251,14 +259,14 @@ export const time = (
 
 export const getOutputMap = (config: Configuration) => {
   const { output, __rootPath, languages, originLang } = config
-  const { dir = './src/locale', file, splitLngFile } = output
+  const { dir = './src/locale', lngFile, splitLngFile } = output
   const result: OutputMap = {}
 
   if (!splitLngFile) {
-    const fileName = file || 'index.json'
+    const fileName = lngFile || 'index.json'
     result.main = path.resolve(__rootPath, dir, fileName)
   } else {
-    let fileName = file || '[name].json'
+    let fileName = lngFile || '[name].json'
     if (!fileName.includes('[name]')) fileName = '[name].json'
     for (const lng of [...languages, originLang]) {
       const finalFileName = fileName.replace(/\[name\]/g, lng)

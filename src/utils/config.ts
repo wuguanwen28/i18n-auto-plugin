@@ -15,7 +15,8 @@ export const DEFAULT_CONFIG: I18nConfig = {
   entry: './src',
   output: {
     dir: './src/locale',
-    file: 'index.json',
+    lngFile: 'index.json',
+    registerFile: true,
     splitLngFile: false,
   },
   importInfo: {

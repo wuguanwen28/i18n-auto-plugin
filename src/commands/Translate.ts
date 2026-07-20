@@ -32,6 +32,7 @@ import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/ceche'
 import { isAllowTranslate, parseAst, resolveTraverse } from '../utils/parse'
 import { extractVueSfc } from '../plugins/vue-sfc'
+import { generateRegisterFile } from './RegisterFile'
 
 const traverse = resolveTraverse()
 
@@ -59,6 +60,7 @@ export class Translate {
       await time('扫描新的语料', () => this.getNewLanguagesMap(), log)
       await time('写入新语料', () => this.writeLanguagesMap(), log)
       await time('翻译语料', () => this.translate(), log)
+      await time('生成注册文件', () => generateRegisterFile(this.config, this.outputMap), log)
       const totalTime = Date.now() - startTime
       logger.info(chalk.green.bold(`[翻译完成] 总耗时：${totalTime}ms`))
     } catch (error) {

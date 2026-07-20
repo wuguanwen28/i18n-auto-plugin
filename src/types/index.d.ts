@@ -154,9 +154,13 @@ export interface I18nConfig {
      */
     dir?: string
     /**
-     * 输出文件名
+     * 语言包输出文件名
      * 当 splitLngFile 为 true 时, [name]为语种名称
      * @default "index.json" | "[name].json"
+     */
+    lngFile?: string
+    /**
+     * @deprecated 已更名为 lngFile,旧字段将在后续版本移除
      */
     file?: string
     /**
@@ -164,6 +168,17 @@ export interface I18nConfig {
      * @default false
      */
     splitLngFile?: boolean
+    /**
+     * 是否生成注册文件(import 语言包并调用 extendLocale 的样板代码)
+     * - true(默认):生成到 output.dir 下,执行目录有 tsconfig.json 时为 index.ts,否则 index.js
+     * - false:不生成
+     * - 字符串:自定义文件名,与 lngFile 一致相对 output.dir 解析,如 'register.ts' 或 '../i18n/register.ts'
+     *
+     * 已有文件包含 [i18n-auto] 标记时每次覆盖重生成;删除标记行即由用户接管:
+     * 终端交互环境会询问是否覆盖(默认否),CI 等非交互环境直接跳过
+     * @default true
+     */
+    registerFile?: boolean | string
   }
   /**
    * 是否开启缓存，如文件没有变化，不会重复解析
