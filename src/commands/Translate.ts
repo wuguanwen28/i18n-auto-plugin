@@ -9,6 +9,7 @@ import {
   getOutputMap,
   mkdirSync,
   prettierCode,
+  replaceTemplateExpr,
   resolveFile,
   scanFile,
   time,
@@ -23,12 +24,7 @@ import {
   OutputMap,
   TranslateOptions,
 } from '../types'
-import {
-  DEFAULT_CONFIG,
-  DEFAULT_EXCLUDE_CALL,
-  lngList,
-  tplRegexp,
-} from '../utils/config'
+import { DEFAULT_CONFIG, DEFAULT_EXCLUDE_CALL, lngList } from '../utils/config'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cache'
 import { isAllowTranslate, parseAst, resolveTraverse } from '../utils/parse'
@@ -168,10 +164,10 @@ export class Translate {
           TemplateLiteral(path) {
             if (!isAllowTranslate(path, excludeCall)) return
             let i = 0
-            const text = path
-              .toString()
-              .replace(/^`|`$/g, '')
-              .replace(tplRegexp, () => `{{@${++i}}}`)
+            const text = replaceTemplateExpr(
+              path.toString().replace(/^`|`$/g, ''),
+              () => `{{@${++i}}}`,
+            )
             addText(text)
           },
         })

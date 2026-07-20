@@ -7,9 +7,9 @@ import {
   resolveGenerator,
   resolveTraverse,
 } from '../utils/parse'
-import { getHash } from '../utils'
+import { getHash, replaceTemplateExpr } from '../utils'
 import { logger } from '../utils/logger'
-import { DEFAULT_EXCLUDE_CALL, tplRegexp } from '../utils/config'
+import { DEFAULT_EXCLUDE_CALL } from '../utils/config'
 
 const traverse = resolveTraverse()
 const generator = resolveGenerator()
@@ -112,10 +112,10 @@ export const transformWithBabel = (params: {
       TemplateLiteral: function (path) {
         if (!isAllowTranslate(path, excludeCall)) return
         let i = 0
-        const value = path
-          .toString()
-          .replace(/^`|`$/g, '')
-          .replace(tplRegexp, () => `{{@${++i}}}`)
+        const value = replaceTemplateExpr(
+          path.toString().replace(/^`|`$/g, ''),
+          () => `{{@${++i}}}`,
+        )
         const id = getHash(value)
         if (!isHasLng({ id, value, loc: path.node.loc })) return
 

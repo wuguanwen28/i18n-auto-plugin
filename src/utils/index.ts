@@ -144,6 +144,46 @@ export const getConfiguration = (filePath?: string): Configuration | null => {
   return config
 }
 
+/**
+ * 将模板字符串中的 ${...} 表达式替换为占位符,正确处理嵌套花括号
+ * 如 `你好${fn({a:1})}` -> `你好{{@1}}`
+ * (朴素正则在第一个 } 截断会残留 `)}`)
+ * @param text 已去掉首尾反引号的模板字符串内容
+ * @param replacer 接收表达式内容与序号、返回占位符
+ */
+export const replaceTemplateExpr = (
+  text: string,
+  replacer: (expr: string, index: number) => string,
+): string => {
+  let result = ''
+  let i = 0
+  let count = 0
+  while (i < text.length) {
+    // 匹配未转义的 ${
+    if (text[i] === '$' && text[i + 1] === '{' && text[i - 1] !== '\\') {
+      let depth = 1
+      let j = i + 2
+      // 配对花括号:遇到 { 加深,遇到 } 减浅,归零即找到表达式结尾
+      while (j < text.length && depth > 0) {
+        if (text[j] === '{') depth++
+        else if (text[j] === '}') depth--
+        if (depth === 0) break
+        j++
+      }
+      if (depth === 0) {
+        const expr = text.slice(i + 2, j)
+        result += replacer(expr, ++count)
+        i = j + 1
+        continue
+      }
+      // 未配对(理论不会发生,模板字面量语法合法),原样保留
+    }
+    result += text[i]
+    i++
+  }
+  return result
+}
+
 export const createFilter = (config?: Configuration | null) => {
   const {
     include = ['src'],

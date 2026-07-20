@@ -33,7 +33,7 @@ class Logger {
   info = (...msgs: Message[]) => {
     if (!this.canLog(LogLevel.info)) return
     const msg = this.format(msgs)
-    console.warn(chalk.blue(`${this.name} Info: `) + msg)
+    console.log(chalk.blue(`${this.name} Info: `) + msg)
   }
 
   warn = (...msgs: Message[]) => {
@@ -45,7 +45,7 @@ class Logger {
   error = (...msgs: Message[]) => {
     if (!this.canLog(LogLevel.error)) return
     const msg = this.format(msgs)
-    console.warn(chalk.red(`${this.name} Error: `) + msg)
+    console.error(chalk.red(`${this.name} Error: `) + msg)
   }
 }
 

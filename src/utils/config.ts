@@ -10,7 +10,7 @@ export const DEFAULT_CONFIG_PATH = 'i18n.config.js'
 
 export const DEFAULT_CONFIG: I18nConfig = {
   cache: true,
-  emitWarn: false,
+  emitWarn: true,
   logger: 'info',
   entry: './src',
   output: {
@@ -39,7 +39,5 @@ export const DEFAULT_CONFIG: I18nConfig = {
 }
 
 export const ZH_EXT = /[\u4e00-\u9fa5]+/
-
-export const tplRegexp = /(?<!\\)\$\{([\s\S]+?)\}/g
 
 export const lngList: LngType[] = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'zh-TW']
