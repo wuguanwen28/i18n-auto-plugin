@@ -18,6 +18,14 @@ export type TranslateOptions = {
    * 是否使用文件缓存(--no-cache 时为 false,覆盖配置中的 cache)
    */
   cache?: boolean
+  /**
+   * 日志级别(--logger <level>,覆盖配置中的 logger)
+   */
+  logger?: LoggerLevel
+  /**
+   * 是否跳过翻译步骤(scan 命令:只扫描写语料,不调翻译服务)
+   */
+  skipTranslate?: boolean
 }
 
 export type LoggerLevel = 'error' | 'warn' | 'info' | 'none'

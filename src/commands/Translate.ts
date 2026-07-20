@@ -19,6 +19,7 @@ import {
   LanguagesMap,
   LanguagesMapById,
   LngType,
+  LoggerLevel,
   OutputMap,
   TranslateOptions,
 } from '../types'
@@ -42,6 +43,12 @@ export class Translate {
   /** CLI --no-cache 时为 false,覆盖配置中的 cache */
   cliCache?: boolean
 
+  /** CLI --logger,覆盖配置中的 logger */
+  cliLogger?: LoggerLevel
+
+  /** CLI scan 命令:只扫描写语料,跳过翻译 */
+  skipTranslate?: boolean
+
   config!: Configuration
 
   count = 0
@@ -53,6 +60,8 @@ export class Translate {
   constructor(options: TranslateOptions = {}) {
     this.customConfigPath = options.config
     this.cliCache = options.cache
+    this.cliLogger = options.logger
+    this.skipTranslate = options.skipTranslate
   }
 
   async run() {
@@ -63,10 +72,14 @@ export class Translate {
       await time('获取旧的语料', () => this.getOldLanguagesMap(), log)
       await time('扫描新的语料', () => this.getNewLanguagesMap(), log)
       await time('写入新语料', () => this.writeLanguagesMap(), log)
-      await time('翻译语料', () => this.translate(), log)
-      await time('生成注册文件', () => generateRegisterFile(this.config, this.outputMap), log)
+      // scan 命令或 skipTranslate 时跳过翻译,只更新语料文件
+      if (!this.skipTranslate) {
+        await time('翻译语料', () => this.translate(), log)
+        await time('生成注册文件', () => generateRegisterFile(this.config, this.outputMap), log)
+      }
       const totalTime = Date.now() - startTime
-      logger.info(chalk.green.bold(`[翻译完成] 总耗时：${totalTime}ms`))
+      const label = this.skipTranslate ? '扫描完成' : '翻译完成'
+      logger.info(chalk.green.bold(`[${label}] 总耗时：${totalTime}ms`))
     } catch (error) {
       logger.error(error as Error)
     }
@@ -84,6 +97,8 @@ export class Translate {
     // cac 声明 --no-cache 后未传参也会得到 cache: true,
     // 因此仅在显式传入 --no-cache(false)时覆盖配置
     if (this.cliCache === false) this.config.cache = false
+    // --logger 覆盖配置中的日志级别
+    if (this.cliLogger) this.config.logger = this.cliLogger
     this.outputMap = getOutputMap(this.config)
     logger.setLogLevel(this.config.logger)
   }

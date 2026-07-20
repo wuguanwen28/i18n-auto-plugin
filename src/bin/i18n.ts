@@ -22,9 +22,22 @@ cli
   .alias('translate')
   .option('-c, --config <file>', 'use specified config file')
   .option('--no-cache', 'Ignore file cache and rescan all files')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
   .action(async (_root: string, options: any) => {
     const { Translate } = await import('../commands/Translate')
     const translate = new Translate(options)
+    translate.run()
+  })
+
+// 只扫描写语料,不调用翻译服务
+cli
+  .command('scan', 'Scan and write locale files without translating')
+  .option('-c, --config <file>', 'use specified config file')
+  .option('--no-cache', 'Ignore file cache and rescan all files')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
+  .action(async (options: any) => {
+    const { Translate } = await import('../commands/Translate')
+    const translate = new Translate({ ...options, skipTranslate: true })
     translate.run()
   })
 
