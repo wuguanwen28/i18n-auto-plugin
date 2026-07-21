@@ -166,6 +166,20 @@ export type YoudaoAiTranslateServiceConfig = TranslateServiceConfig & {
   vocabId?: string
 }
 
+/** Google Cloud Translation v2 配置 */
+export type GoogleTranslateServiceConfig = {
+  /**
+   * Google Cloud API Key(需启用 Cloud Translation API)
+   * 申请:https://console.cloud.google.com/apis/library/translate.googleapis.com
+   */
+  apiKey: string
+  /**
+   * 代理地址,如 'http://127.0.0.1:7890'
+   * 国内访问 Google 需配置;未填时自动读取 HTTPS_PROXY/HTTP_PROXY 环境变量;都没有则直连
+   */
+  proxy?: string
+}
+
 export interface I18nConfig {
   /**
    * 继承另一个配置文件（仅支持文件路径，不支持 npm 包名）
@@ -303,6 +317,10 @@ export interface I18nConfig {
    * 接口为流式 SSE 返回,一次请求翻译一批文本(用占位符拼接)
    */
   youdaoAi?: YoudaoAiTranslateServiceConfig
+  /**
+   * Google Cloud Translation v2 配置(国内需配 proxy 或环境变量 HTTPS_PROXY)
+   */
+  google?: GoogleTranslateServiceConfig
 
   /**
    * 自定义翻译器
