@@ -21,6 +21,14 @@ export abstract class Translator {
   /** 多服务模式下,各服务对应的翻译器实例(由 Translate.translate 注入) */
   serviceTranslators?: Partial<Record<TranslateServiceType, Translator>>
 
+  /**
+   * 校验本服务配置是否齐全(各子类实现)
+   * 供 validateTranslateServices 启动校验与构造函数认领配置共用,避免判断逻辑重复
+   */
+  static hasConfig(_config: Configuration): boolean {
+    return false
+  }
+
   constructor(options: TranslatorOptions) {
     this.config = options.config
     this.languagesMap = options.languagesMap

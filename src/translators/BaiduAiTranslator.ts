@@ -1,5 +1,6 @@
 import {
   BaiduAiTranslateServiceConfig,
+  Configuration,
   LngType,
   TranslateParams,
   TranslatorOptions,
@@ -13,12 +14,20 @@ export class BaiduAiTranslator extends BaiduTranslator {
   // @ts-ignore
   declare serverConfig: BaiduAiTranslateServiceConfig
 
+  /** 校验百度大模型翻译配置是否齐全(appKey 或 apiKey 任一即可) */
+  static hasConfig(config: Configuration) {
+    return !!(
+      config.baiduAi?.appId &&
+      (config.baiduAi?.appKey || config.baiduAi?.apiKey)
+    )
+  }
+
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, baiduAi } = options.config || {}
     // translateService 已归一化为数组,包含本服务即认领配置
     if (translateService.includes('baiduAi')) {
-      if (!baiduAi?.appId || (!baiduAi?.appKey && !baiduAi?.apiKey)) {
+      if (!BaiduAiTranslator.hasConfig(options.config)) {
         throw new Error(`请配置${this.name}的appId和appKey或apiKey`)
       }
       this.serverConfig = baiduAi

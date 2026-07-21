@@ -263,23 +263,12 @@ export class Translate {
     })
   }
 
-  /** 校验所选服务均已配置密钥,缺失则报错退出 */
+  /** 校验所选服务均已配置,缺失则报错退出 */
   private validateTranslateServices(services: TranslateServiceType[]) {
-    const { config } = this
     const missing: string[] = []
     for (const svc of services) {
-      const hasConfig =
-        (svc === 'baidu' && config.baidu?.appId && config.baidu?.appKey) ||
-        (svc === 'baiduAi' &&
-          config.baiduAi?.appId &&
-          (config.baiduAi?.appKey || config.baiduAi?.apiKey)) ||
-        (svc === 'youdao' && config.youdao?.appId && config.youdao?.appKey) ||
-        (svc === 'youdaoAi' &&
-          config.youdaoAi?.appId &&
-          config.youdaoAi?.appKey) ||
-        (svc === 'google' && config.google?.apiKey) ||
-        (svc === 'custom' && typeof config.CustomTranslate === 'function')
-      if (!hasConfig) missing.push(svc)
+      const Ctor = translatorMap[svc] as { hasConfig?: (c: Configuration) => boolean }
+      if (!Ctor?.hasConfig?.(this.config)) missing.push(svc)
     }
     if (missing.length) {
       logger.error(

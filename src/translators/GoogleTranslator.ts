@@ -1,5 +1,6 @@
 import { ProxyAgent, setGlobalDispatcher } from 'undici'
 import {
+  Configuration,
   GoogleTranslateServiceConfig,
   LngType,
   TranslateParams,
@@ -25,12 +26,17 @@ export class GoogleTranslator extends Translator {
   /** 代理是否已设置全局 dispatcher,避免重复设置 */
   private static proxyInitialized = false
 
+  /** 校验谷歌翻译配置是否齐全 */
+  static hasConfig(config: Configuration) {
+    return !!config.google?.apiKey
+  }
+
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, google } = options.config || {}
     // translateService 已归一化为数组,包含本服务即认领配置
     if (translateService.includes('google')) {
-      if (!google?.apiKey) {
+      if (!GoogleTranslator.hasConfig(options.config)) {
         throw new Error(`请配置${this.name}的apiKey`)
       }
       this.serverConfig = google

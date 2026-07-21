@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 import crypto from 'node:crypto'
 import {
+  Configuration,
   LngType,
   TranslateParams,
   TranslateServiceConfig,
@@ -23,12 +24,17 @@ export class YoudaoTranslator extends Translator {
     'ko-KR': 'ko',
   }
 
+  /** 校验有道翻译配置是否齐全 */
+  static hasConfig(config: Configuration) {
+    return !!(config.youdao?.appId && config.youdao?.appKey)
+  }
+
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, youdao } = options.config || {}
     // translateService 已归一化为数组,包含本服务即认领配置
     if (translateService.includes('youdao')) {
-      if (!youdao?.appId || !youdao?.appKey) {
+      if (!YoudaoTranslator.hasConfig(options.config)) {
         throw new Error(`请配置${this.name}的appId和appKey`)
       }
       this.serverConfig = youdao

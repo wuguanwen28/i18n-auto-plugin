@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import {
+  Configuration,
   LngType,
   TranslateParams,
   YoudaoAiTranslateServiceConfig,
@@ -18,12 +19,17 @@ export class YoudaoAiTranslator extends YoudaoTranslator {
   // @ts-ignore —— 大模型版配置字段更丰富
   declare serverConfig: YoudaoAiTranslateServiceConfig
 
+  /** 校验有道大模型翻译配置是否齐全 */
+  static hasConfig(config: Configuration) {
+    return !!(config.youdaoAi?.appId && config.youdaoAi?.appKey)
+  }
+
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, youdaoAi } = options.config || {}
     // translateService 已归一化为数组,包含本服务即认领配置
     if (translateService.includes('youdaoAi')) {
-      if (!youdaoAi?.appId || !youdaoAi?.appKey) {
+      if (!YoudaoAiTranslator.hasConfig(options.config)) {
         throw new Error(`请配置${this.name}的appId和appKey`)
       }
       this.serverConfig = youdaoAi

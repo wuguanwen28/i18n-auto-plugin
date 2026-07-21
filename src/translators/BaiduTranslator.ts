@@ -2,6 +2,7 @@ import chalk from 'chalk'
 import {
   BaiduAiTranslateServiceConfig,
   BaiduTranslateServiceConfig,
+  Configuration,
   LngType,
   TranslateParams,
   TranslatorOptions,
@@ -23,12 +24,17 @@ export class BaiduTranslator extends Translator {
     'ko-KR': 'kor',
   }
 
+  /** 校验百度翻译配置是否齐全 */
+  static hasConfig(config: Configuration) {
+    return !!(config.baidu?.appId && config.baidu?.appKey)
+  }
+
   constructor(options: TranslatorOptions) {
     super(options)
     const { translateService, baidu } = options.config || {}
     // translateService 已归一化为数组,包含本服务即认领配置
     if (translateService.includes('baidu')) {
-      if (!baidu?.appId || !baidu?.appKey) {
+      if (!BaiduTranslator.hasConfig(options.config)) {
         throw new Error(`请配置${this.name}的appId和appKey`)
       }
       this.serverConfig = baidu

@@ -1,8 +1,13 @@
-import { LngType, TranslateParams, TranslatorOptions } from '../types'
+import { Configuration, LngType, TranslateParams, TranslatorOptions } from '../types'
 import { Translator } from './Translator'
 
 export class CustomTranslator extends Translator {
   name = '自定义翻译'
+
+  /** 校验自定义翻译配置是否齐全(CustomTranslate 须为函数) */
+  static hasConfig(config: Configuration) {
+    return typeof config.CustomTranslate === 'function'
+  }
 
   constructor(options: TranslatorOptions) {
     super(options)
