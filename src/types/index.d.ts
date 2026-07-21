@@ -323,14 +323,15 @@ export interface I18nConfig {
   google?: GoogleTranslateServiceConfig
 
   /**
-   * 自定义翻译器
+   * 自定义翻译函数(translateService: 'custom' 时必填)
    *
+   * 契约:
+   * - 入参 texts:{id: 原文},原文已将换行符替换为 ✅✅ 占位
+   * - 返回:{id: 译文},key 必须与入参一一对应,缺失的 id 视为翻译失败
+   * - 译文中的 ✅✅ 会被自动还原为换行符,{{@N}} 占位符原样保留
+   * - 抛出的异常会被上层捕获并提示(多服务模式下该服务标记失败,不影响其他服务)
    */
   CustomTranslate?: (
-    /**
-     * 要翻译的文本
-     * { "id": "文本" }
-     */
     texts: TranslateParams,
     fromLang: LngType,
     toLang: LngType,

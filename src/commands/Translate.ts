@@ -278,7 +278,7 @@ export class Translate {
           config.youdaoAi?.appId &&
           config.youdaoAi?.appKey) ||
         (svc === 'google' && config.google?.apiKey) ||
-        svc === 'custom'
+        (svc === 'custom' && typeof config.CustomTranslate === 'function')
       if (!hasConfig) missing.push(svc)
     }
     if (missing.length) {
