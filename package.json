@@ -20,6 +20,16 @@
       "types": "./dist/webpack-plugin.d.ts",
       "import": "./dist/webpack-plugin.js",
       "require": "./dist/cjs/webpack-plugin.cjs"
+    },
+    "./rspack": {
+      "types": "./dist/rspack-plugin.d.ts",
+      "import": "./dist/rspack-plugin.js",
+      "require": "./dist/cjs/rspack-plugin.cjs"
+    },
+    "./rolldown": {
+      "types": "./dist/rolldown-plugin.d.ts",
+      "import": "./dist/rolldown-plugin.js",
+      "require": "./dist/cjs/rolldown-plugin.cjs"
     }
   },
   "bin": {
@@ -69,6 +79,7 @@
   },
   "devDependencies": {
     "@rollup/plugin-replace": "^6.0.3",
+    "@rspack/core": "^2.1.4",
     "@types/babel__generator": "^7.27.0",
     "@types/babel__helper-module-imports": "^7.18.3",
     "@types/babel__traverse": "^7.28.0",

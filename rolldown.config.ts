@@ -57,6 +57,8 @@ const nodeEsmConfig = defineConfig({
     'bin': resolve('./src/bin/i18n.ts'),
     'vite-plugin': resolve('./src/plugins/vite.ts'),
     'webpack-plugin': resolve('./src/plugins/webpack.ts'),
+    'rspack-plugin': resolve('./src/plugins/rspack.ts'),
+    'rolldown-plugin': resolve('./src/plugins/rolldown.ts'),
   },
   output: {
     dir: './dist',
@@ -78,6 +80,8 @@ const nodeCjsConfig = defineConfig({
   input: {
     'vite-plugin': resolve('./src/plugins/vite.ts'),
     'webpack-plugin': resolve('./src/plugins/webpack.ts'),
+    'rspack-plugin': resolve('./src/plugins/rspack.ts'),
+    'rolldown-plugin': resolve('./src/plugins/rolldown.ts'),
   },
   output: {
     dir: './dist/cjs',
