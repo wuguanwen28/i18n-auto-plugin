@@ -187,7 +187,7 @@ export function rewriteVueSfc(code: string, options: RewriteOptions) {
           s.appendRight(setupBlock.loc.start.offset, `\n${importCode}\n`)
         }
       } else {
-        s.append(`\n<script setup>\n${importCode}\n</script>\n`)
+        s.prepend(`<script setup>\n${importCode}\n</script>\n`)
       }
     }
 

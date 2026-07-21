@@ -1,4 +1,5 @@
 import { createUnplugin } from 'unplugin'
+import path from 'node:path'
 import { transformWithBabel } from './babel-transform'
 import { rewriteVueSfc } from './vue-sfc'
 import { Configuration, LanguagesMapById } from '../types'
@@ -19,7 +20,7 @@ export type Options = {
  * 同一份代码适配 vite / webpack / rspack / rollup / esbuild 等构建工具
  * loader 注入、ESM/CJS 兼容均由 unplugin 内部处理
  */
-export const I18nAuto = createUnplugin<Options | undefined>((options) => {
+export const I18nAuto = createUnplugin((options: Options | undefined, meta) => {
   const { configPath = '' } = options || {}
 
   let config: Configuration | null = null
@@ -41,21 +42,38 @@ export const I18nAuto = createUnplugin<Options | undefined>((options) => {
 
     transformInclude(id) {
       init()
-      // .vue 带 query 的子请求（?vue&type=style 等）只处理主请求
       const [filename, query] = id.split('?', 2)
-      if (query && filename.endsWith('.vue')) return false
+      if (query && filename.endsWith('.vue')) {
+        // webpack/rspack:vue-loader 的子请求（?vue&type=script 等）会重新
+        // 从文件系统读原始文件再按 query 提取块，必须同样转换，
+        // 否则主请求的转换结果被原始内容覆盖（script setup 块丢失、组件为空）
+        // vite:子请求走 @vitejs/plugin-vue 的 descriptor 缓存,code 已是块内容,不可重复转换
+        if (meta.framework === 'webpack' || meta.framework === 'rspack') {
+          return !!config && !/node_modules/.test(filename) && filter(filename)
+        }
+        return false
+      }
       return !!config && !/node_modules/.test(filename) && filter(filename)
     },
 
     transform(code, id) {
-      // 用结构化 loc 交给构建工具格式化（vite dev 显示 File/Line，
-      // rollup build 自动加 "file (line:column)" 前缀），
-      // 消息体内不再拼路径，避免 build 下与 rollup 前缀重复
       const emitWarning = ({ text, line, column }: any) => {
-        this.warn({
-          message: `在语料库中未发现该文本【${sliceText(text)}】请更新语料库`,
-          loc: { file: id, line, column },
-        } as any)
+        const base = `在语料库中未发现该文本【${sliceText(text)}】请更新语料库`
+        if (meta.framework === 'webpack' || meta.framework === 'rspack') {
+          // ModuleWarning 不读 warning.loc(见 webpack/lib/ModuleWarning.js),传 loc
+          // 会被丢,故把"文件:行:列"拼进 message,终端/IDE 可识别为可点击链接
+          if (line) {
+            const file = path
+              .relative(process.cwd(), id.split('?')[0])
+              .replace(/\\/g, '/')
+            this.warn(`${base} (${file}:${line}:${column})`)
+          } else {
+            this.warn(base)
+          }
+          return
+        }
+        // vite/rollup:loc 经 this.warn 原样透传
+        this.warn({ message: base, loc: { file: id, line, column } })
       }
 
       const importInfo = {
