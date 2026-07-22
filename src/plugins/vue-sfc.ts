@@ -120,12 +120,14 @@ export function rewriteVueSfc(code: string, options: RewriteOptions) {
     const isHasLng = (text: string, loc: any) => {
       const id = getHash(text)
       if (lngMap[id]) return id
-      emitWarning({
-        text,
-        id: filePath,
-        line: loc?.start.line || 0,
-        column: loc?.start.column || 0,
-      })
+      if (config.emitWarn) {
+        emitWarning({
+          text,
+          id: filePath,
+          line: loc?.start.line || 0,
+          column: loc?.start.column || 0,
+        })
+      }
       return null
     }
 

@@ -13,6 +13,8 @@ import {
 export type Options = {
   /** i18n 配置文件路径，默认自动查找 i18n.config.js */
   configPath?: string
+  /** 是否禁用插件(如 CI/调试时临时关闭转换) */
+  disable?: boolean
 }
 
 /**
@@ -41,6 +43,7 @@ export const I18nAuto = createUnplugin((options: Options | undefined, meta) => {
     enforce: 'pre',
 
     transformInclude(id) {
+      if (options?.disable) return false
       init()
       const [filename, query] = id.split('?', 2)
       if (query && filename.endsWith('.vue')) {
