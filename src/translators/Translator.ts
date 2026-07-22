@@ -174,7 +174,7 @@ export abstract class Translator {
     }
 
     // 写差异报告
-    await writeDiffReport(this.config, diffReport)
+    await writeDiffReport(this.config, diffReport, this.languagesMap)
 
     return this.languagesMap
   }

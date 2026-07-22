@@ -1,9 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import readline from 'node:readline/promises'
-import chalk from 'chalk'
 import { Configuration, OutputMap } from '../types'
 import { mkdirSync, prettierCode } from '../utils'
+import { confirmOverwrite } from '../utils/prompt'
 import { logger } from '../utils/logger'
 
 /** 指纹标记:含此行的文件视为工具生成,可安全覆盖 */
@@ -22,7 +21,7 @@ const FILE_HEADER = `/* eslint-disable */
 // ${GENERATED_MARK}
 `
 
-/** 语种码转驼峰变量名:zh-CN → zhCN */
+/** 语种码转驼峰变量名:zh-CN -> zhCN */
 const toVarName = (lng: string) => {
   return lng.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())
 }
@@ -91,26 +90,10 @@ export const buildRegisterCode = (
   )
 }
 
-/** 交互式询问是否覆盖已被接管的注册文件(仅 TTY 环境,默认否) */
-const confirmOverwrite = async (registerPath: string): Promise<boolean> => {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  })
-  try {
-    const answer = await rl.question(
-      chalk.yellow(`注册文件已存在且无生成标记: ${registerPath}\n是否覆盖?(y/N) `),
-    )
-    return answer.trim().toLowerCase() === 'y'
-  } finally {
-    rl.close()
-  }
-}
-
 /**
  * 生成注册文件
- * 覆盖规则:文件不存在 → 生成;存在且含指纹标记 → 覆盖重生成;
- * 存在但无标记 → 用户已接管:TTY 环境询问是否覆盖(默认否),
+ * 覆盖规则:文件不存在 -> 生成;存在且含指纹标记 -> 覆盖重生成;
+ * 存在但无标记 -> 用户已接管:TTY 环境询问是否覆盖(默认否),
  * 非 TTY(CI 等)直接跳过并提示
  */
 export const generateRegisterFile = async (
@@ -128,7 +111,9 @@ export const generateRegisterFile = async (
         logger.warn(`注册文件已被接管,跳过生成: ${registerPath}`)
         return
       }
-      const overwrite = await confirmOverwrite(registerPath)
+      const overwrite = await confirmOverwrite(
+        `注册文件已存在且无生成标记: ${registerPath}\n是否覆盖?`,
+      )
       if (!overwrite) {
         logger.info(`已保留现有注册文件: ${registerPath}`)
         return
