@@ -206,8 +206,8 @@ export abstract class Translator {
       let item = this.languagesMap[id]
       // 跳过空白原文
       if (!item?.[fromLang]) continue
-      // 跳过已翻译的
-      if (item[toLang]) continue
+      // 跳过已翻译的(forceTranslate 时重译)
+      if (!this.config.forceTranslate && item[toLang]) continue
 
       count++
       langMap[id] = this.formatText(item[fromLang])

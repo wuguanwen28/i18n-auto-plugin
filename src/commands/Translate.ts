@@ -47,6 +47,9 @@ export class Translate {
   /** CLI scan 命令:只扫描写语料,跳过翻译 */
   skipTranslate?: boolean
 
+  /** CLI --force:强制重新翻译,覆盖配置中的 forceTranslate */
+  cliForceTranslate?: boolean
+
   config!: Configuration
 
   count = 0
@@ -60,6 +63,7 @@ export class Translate {
     this.cliCache = options.cache
     this.cliLogger = options.logger
     this.skipTranslate = options.skipTranslate
+    this.cliForceTranslate = options.force
   }
 
   async run() {
@@ -97,6 +101,8 @@ export class Translate {
     if (this.cliCache === false) this.config.cache = false
     // --logger 覆盖配置中的日志级别
     if (this.cliLogger) this.config.logger = this.cliLogger
+    // --force 覆盖配置中的 forceTranslate
+    if (this.cliForceTranslate) this.config.forceTranslate = true
     this.outputMap = getOutputMap(this.config)
     logger.setLogLevel(this.config.logger)
   }

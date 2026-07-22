@@ -23,6 +23,7 @@ cli
   .option('-c, --config <file>', 'use specified config file')
   .option('--no-cache', 'Ignore file cache and rescan all files')
   .option('--logger <level>', 'Log level: none | error | warn | info')
+  .option('-f, --force', 'Force re-translate all texts (ignore existing)')
   .action(async (_root: string, options: any) => {
     const { Translate } = await import('../commands/Translate')
     const translate = new Translate(options)

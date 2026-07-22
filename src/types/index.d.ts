@@ -26,6 +26,10 @@ export type TranslateOptions = {
    * 是否跳过翻译步骤(scan 命令:只扫描写语料,不调翻译服务)
    */
   skipTranslate?: boolean
+  /**
+   * 强制重新翻译(--force,已翻译的也重译)
+   */
+  force?: boolean
 }
 
 export type LoggerLevel = 'error' | 'warn' | 'info' | 'none'
@@ -238,6 +242,11 @@ export interface I18nConfig {
    * @default true
    */
   cache?: boolean
+  /**
+   * 强制重新翻译(已翻译的也重译,覆盖语言包)
+   * @default false
+   */
+  forceTranslate?: boolean
   /**
    * 日志级别
    * @default 'info'
