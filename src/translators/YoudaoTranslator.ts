@@ -77,7 +77,15 @@ export class YoudaoTranslator extends Translator {
     ids.forEach((id, index) => {
       if (failedIndexSet.has(index)) return
       const translation = queryToTranslation[texts[id]]
-      if (translation) result[id] = translation
+      if (!translation) return
+      // 有道对部分词会给译文外层加引号(如 "Cut、"Revoke")。
+      // 原文本身不含 " 时,说明引号是有道多余加的,去掉外层引号;
+      // 原文含 " 时保留(可能是原文引号的对应翻译)
+      if (!texts[id].includes('"')) {
+        result[id] = translation.replace(/^"+|"+$/g, '')
+      } else {
+        result[id] = translation
+      }
     })
 
     return result
