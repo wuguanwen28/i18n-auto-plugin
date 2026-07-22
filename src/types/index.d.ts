@@ -248,6 +248,17 @@ export interface I18nConfig {
    */
   forceTranslate?: boolean
   /**
+   * 翻译失败重试次数(指数退避 1s/2s/4s)
+   * @default 3
+   */
+  retryTimes?: number
+  /**
+   * 每秒请求数(QPS 限流,0 或不配表示不限)
+   * 用于避免触发翻译服务的频率限制(如百度 54003)
+   * @default 0
+   */
+  qps?: number
+  /**
    * 日志级别
    * @default 'info'
    */

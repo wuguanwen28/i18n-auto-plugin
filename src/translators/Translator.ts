@@ -63,7 +63,10 @@ export abstract class Translator {
       if (list.length) {
         logger.info(chalk.green.bold(`开始翻译 ${originLang} -> ${toLang}`))
         for (const langMap of list) {
-          let result = await this.requestTranslate(langMap, originLang, toLang)
+          await this.waitQps()
+          let result = await this.withRetry(() =>
+            this.requestTranslate(langMap, originLang, toLang),
+          )
           for (const id in langMap) {
             if (!result[id]) {
               logger.warn(`翻译失败：${langMap[id]}`)
@@ -120,11 +123,11 @@ export abstract class Translator {
         > = {}
         for (const svc of services) {
           try {
-            const res = await this.requestTranslateByService(
+            await this.waitQps()
+            const res = await this.withRetry(
+              () =>
+                this.requestTranslateByService(svc, langMap, originLang, toLang),
               svc,
-              langMap,
-              originLang,
-              toLang,
             )
             serviceResults[svc] = res
           } catch (err) {
@@ -194,6 +197,38 @@ export abstract class Translator {
       return await translator.requestTranslate(texts, fromLang, toLang)
     }
     return await this.requestTranslate(texts, fromLang, toLang)
+  }
+
+  private lastRequestTime = 0
+
+  /** QPS 限流:确保请求间隔不小于 1000/qps ms(qps<=0 不限) */
+  private async waitQps() {
+    const { qps } = this.config
+    if (!qps || qps <= 0) return
+    const minInterval = 1000 / qps
+    const elapsed = Date.now() - this.lastRequestTime
+    if (elapsed < minInterval) {
+      await new Promise((r) => setTimeout(r, minInterval - elapsed))
+    }
+    this.lastRequestTime = Date.now()
+  }
+
+  /** 包装翻译调用,失败重试(指数退避 1s/2s/4s) */
+  private async withRetry<T>(fn: () => Promise<T>, label = '翻译'): Promise<T> {
+    const retries = this.config.retryTimes ?? 3
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        return await fn()
+      } catch (error) {
+        if (attempt >= retries) throw error
+        const delay = 1000 * 2 ** (attempt - 1)
+        logger.warn(
+          `${label}失败(${attempt}/${retries}),${delay}ms 后重试: ${(error as Error).message}`,
+        )
+        await new Promise((r) => setTimeout(r, delay))
+      }
+    }
+    throw new Error('unreachable')
   }
 
   splitText(fromLang: LngType, toLang: LngType) {

@@ -32,6 +32,8 @@ export const DEFAULT_CONFIG: I18nConfig = {
   languages: ['en-US'],
   translateService: 'baidu',
   batchSize: 100,
+  retryTimes: 3,
+  qps: 0,
   baidu: {
     appId: '',
     appKey: '',
