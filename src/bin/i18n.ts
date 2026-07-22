@@ -41,4 +41,15 @@ cli
     translate.run()
   })
 
+// 应用 diff.json 中用户修改后的 suggested 译文到语言包
+cli
+  .command('apply', 'Apply diff.json suggested translations to locale files')
+  .option('-c, --config <file>', 'use specified config file')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
+  .action(async (options: any) => {
+    const { Apply } = await import('../commands/Apply')
+    const apply = new Apply(options)
+    apply.run()
+  })
+
 cli.parse()
