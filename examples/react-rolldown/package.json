@@ -1,0 +1,24 @@
+{
+  "name": "react-rolldown",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "rolldown -c rolldown.config.ts -w",
+    "build": "rolldown -c rolldown.config.ts"
+  },
+  "dependencies": {
+    "i18n-auto-plugin": "link:../..",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/preset-react": "^7.26.0",
+    "@rolldown/plugin-babel": "^0.2.3",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "rolldown": "1.0.0-beta.60",
+    "typescript": "~5.9.3"
+  }
+}
