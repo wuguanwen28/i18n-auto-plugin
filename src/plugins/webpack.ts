@@ -1,11 +1,12 @@
 import { I18nAuto, Options } from './unplugin'
 
 /**
- * 兼容 `new I18nAutoWebpackPlugin()` 与 `I18nAutoWebpackPlugin()` 两种调用方式
- * （函数被 new 调用时返回对象即为构造结果）
+ * webpack 插件入口,具名导入(new 调用):
+ *   const { I18nAutoPlugin } = require('i18n-auto-plugin/webpack')
+ *   plugins: [new I18nAutoPlugin()]
  */
-export function I18nAutoWebpackPlugin(options?: Options) {
+export function I18nAutoPlugin(options?: Options) {
   return I18nAuto.webpack(options)
 }
 
-export default I18nAutoWebpackPlugin
+export default I18nAutoPlugin

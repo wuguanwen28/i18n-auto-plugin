@@ -25,7 +25,7 @@ const ForkTsCheckerWebpackPlugin =
     ? require('react-dev-utils/ForkTsCheckerWarningWebpackPlugin')
     : require('react-dev-utils/ForkTsCheckerWebpackPlugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
-const { I18nAutoWebpackPlugin } = require('i18n-auto-plugin/webpack');
+const { I18nAutoPlugin } = require('i18n-auto-plugin/webpack');
 
 const createEnvironmentHash = require('./webpack/persistentCache/createEnvironmentHash');
 
@@ -748,7 +748,7 @@ module.exports = function (webpackEnv) {
             },
           },
         }),
-      new I18nAutoWebpackPlugin()
+      new I18nAutoPlugin()
     ].filter(Boolean),
     // Turn off performance processing because we utilize
     // our own hints via the FileSizeReporter
