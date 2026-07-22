@@ -1,4 +1,263 @@
-## i18n-auto-plugin
-  * 自动提取项目中的中文，并翻译成目标语言
-  * 支持有道api, 百度api, 百度大模型、自定义翻译
-  * 支持vue3/react、vite/webpack项目
+# i18n-auto-plugin
+
+自动国际化工具:扫描项目中的中文文本,通过翻译 API 生成多语言包,构建时将中文字符串替换为 `_i18n(hash)` 调用。支持 Vue3/React + Vite/Webpack/Rspack/Rolldown。
+
+## 特性
+
+- 🔍 **自动扫描中文**:`JSXText` / `StringLiteral` / `TemplateLiteral`,以及 Vue SFC `<template>` 的文本与属性
+- 🌐 **多翻译服务**:百度、百度大模型、有道、有道大模型、Google、自定义翻译函数
+- 📦 **多构建工具**:Vite / Webpack / Rspack / Rolldown(基于 unplugin 统一实现)
+- 🎯 **Vue SFC 源码级改写**:template 文本 → `{{ _i18n(hash) }}` 插值,兼容 uni-app 小程序
+- 🔀 **多服务对比翻译**:多服务并行翻译,差异生成 `diff.json`,人工选定后 `apply` 应用
+- 💾 **文件级缓存**:扫描结果按 mtime + 内容 hash 缓存,增量扫描
+- 🔧 **配置继承**:monorepo 子包可 `extends` 根配置
+
+## 安装
+
+```bash
+pnpm add i18n-auto-plugin -D
+# 或 npm install i18n-auto-plugin -D
+```
+
+> Node >= 20.19 / 22.12(CJS 产物通过 require(esm) 加载 unplugin)
+
+## 快速开始
+
+### 1. 初始化配置
+
+```bash
+npx i18n init
+```
+
+生成 `i18n.config.js`,填入翻译服务的 appId/appKey:
+
+```js
+/** @type {import('i18n-auto-plugin').I18nConfig} */
+module.exports = {
+  entry: './src',
+  output: { dir: './src/locale', splitLngFile: false },
+  originLang: 'zh-CN',
+  languages: ['en-US', 'ja-JP'],
+  translateService: 'baidu',
+  baidu: { appId: '你的appId', appKey: '你的appKey' },
+}
+```
+
+### 2. 扫描 + 翻译
+
+```bash
+npx i18n
+```
+
+扫描 `entry` 下的中文 → 调用翻译服务 → 生成语言包到 `output.dir` → 生成注册文件 `locale/index.js`。
+
+### 3. 接入构建插件
+
+**Vite**(`vite.config.ts`):
+```ts
+import { I18nAutoPlugin } from 'i18n-auto-plugin/vite'
+export default {
+  plugins: [I18nAutoPlugin(), vue()],
+}
+```
+
+**Webpack**(`webpack.config.js`):
+```js
+const { I18nAutoPlugin } = require('i18n-auto-plugin/webpack')
+module.exports = {
+  plugins: [new I18nAutoPlugin()],
+}
+```
+
+**Rspack**(`rspack.config.js`):
+```js
+const { I18nAutoPlugin } = require('i18n-auto-plugin/rspack')
+module.exports = {
+  plugins: [new I18nAutoPlugin()],
+}
+```
+
+**Rolldown**(`rolldown.config.ts`):
+```ts
+import { I18nAutoPlugin } from 'i18n-auto-plugin/rolldown'
+export default {
+  plugins: [I18nAutoPlugin()],
+}
+```
+
+构建时,源码中的中文会被替换为 `_i18n('hash')` 调用。
+
+### 4. 运行时引入语言包
+
+入口文件(如 `main.ts`):
+```ts
+import './locale'  // 注册文件自动 extendLocale(lngMap)
+```
+
+### 5. 切换语言
+
+```ts
+import { changeLanguage } from 'i18n-auto-plugin'
+changeLanguage('en-US')  // 默认刷新页面,加载新语言
+```
+
+## CLI 命令
+
+| 命令 | 说明 |
+|---|---|
+| `npx i18n init` | 初始化 `i18n.config.js`(`-f` 强制覆盖) |
+| `npx i18n` / `npx i18n translate` | 扫描 + 翻译 + 生成语言包与注册文件 |
+| `npx i18n scan` | 只扫描写语料,不调用翻译服务 |
+| `npx i18n apply` | 应用 `diff.json` 中修改后的 suggested 到语言包 |
+
+通用选项:
+- `-c, --config <file>`:指定配置文件
+- `--no-cache`:忽略缓存重新扫描
+- `--logger <level>`:日志级别 `none | error | warn | info`
+
+## 配置说明
+
+`i18n.config.js` 字段:
+
+| 字段 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `extends` | string | - | 继承另一个配置文件(相对当前文件目录解析,深合并) |
+| `entry` | string \| string[] | `'./src'` | 扫描入口(相对 `process.cwd()`) |
+| `output.dir` | string | `'./src/locale'` | 语言包输出目录 |
+| `output.lngFile` | string | `'index.json'` | 单文件格式的语言包文件名(`splitLngFile: false`) |
+| `output.splitLngFile` | boolean | `false` | true:每个语种一个文件(`en-US.json` 等) |
+| `output.registerFile` | boolean \| string | `true` | 是否生成注册文件(加载语言包 + extendLocale) |
+| `output.diffFile` | string | `'diff.json'` | 多服务对比差异报告文件名 |
+| `importInfo` | object | 见下 | 构建期注入的 import 信息 |
+| `test` | RegExp \| string | `'.*(js\|jsx\|ts\|tsx\|vue)$'` | 扫描的文件扩展名 |
+| `include` | string \| string[] | `['src']` | 包含目录 |
+| `exclude` | string \| string[] | `['node_modules']` | 排除目录 |
+| `excludeCall` | string[] | `['i18n','console.log','console.warn','console.error']` | 跳过这些函数的参数翻译 |
+| `originLang` | `'zh-CN'` | `'zh-CN'` | 原始语言 |
+| `languages` | LngType[] | `['en-US']` | 目标语言(`zh-CN/en-US/ja-JP/ko-KR/zh-TW`) |
+| `batchSize` | number | `100` | 翻译批次大小 |
+| `cache` | boolean | `true` | 扫描缓存(按 mtime + 内容 hash) |
+| `logger` | LoggerLevel | `'info'` | 日志级别 |
+| `emitWarn` | boolean | `true` | 构建时语料库未收录文本是否告警 |
+| `translateService` | string \| string[] | `'baidu'` | 翻译服务(数组则对比模式) |
+
+`importInfo` 默认:
+```js
+{ source: 'i18n-auto-plugin', imported: 'i18n', local: '_i18n' }
+```
+构建期会把 `_i18n('hash')` 注入为 `import { i18n as _i18n } from 'i18n-auto-plugin'`。
+
+## 翻译服务配置
+
+### 百度翻译(`baidu`)
+```js
+baidu: { appId: 'xxx', appKey: 'xxx', needIntervene: 0 }
+```
+
+### 百度大模型(`baiduAi`)
+```js
+baiduAi: {
+  appId: 'xxx',
+  apiKey: 'xxx',  // 或 appKey 签名鉴权
+  model_type: 'llm',  // llm 大模型(默认) | nmt 机器翻译
+  reference: '使用学术风格翻译',  // 自定义指令
+}
+```
+
+### 有道翻译(`youdao`)
+```js
+youdao: { appId: 'xxx', appKey: 'xxx' }
+```
+
+### 有道大模型(`youdaoAi`)
+```js
+youdaoAi: {
+  appId: 'xxx', appKey: 'xxx',
+  handleOption: 0,  // 0 子曰 pro(14B) | 3 lite(1.5B)
+  prompt: '使用学术风格翻译',
+  vocabId: '术语表ID',
+}
+```
+
+### Google(`google`)
+```js
+google: { apiKey: 'xxx', proxy: 'http://...' }
+```
+
+### 自定义(`custom`)
+```js
+CustomTranslate: async (texts, fromLang, toLang) => {
+  // texts: { [id]: 中文文本 }
+  // 返回 { [id]: 译文 }
+  const result = {}
+  for (const id in texts) {
+    result[id] = await myTranslate(texts[id], toLang)
+  }
+  return result
+}
+```
+
+## 多服务对比翻译 + apply
+
+配置多个翻译服务:
+```js
+translateService: ['baidu', 'youdao'],
+baidu: { appId: '...', appKey: '...' },
+youdao: { appId: '...', appKey: '...' },
+```
+
+`npx i18n` 时,每个文本用所有服务并行翻译,生成 `diff.json`:
+```json
+{
+  "en-US": [
+    {
+      "text": "首页",
+      "id": "abc123def456789",
+      "translations": { "baidu": "Home", "youdao": "Homepage" },
+      "suggested": "Home",
+      "consensus": false
+    }
+  ]
+}
+```
+
+人工修改 `diff.json` 的 `suggested`(选定译文),然后:
+```bash
+npx i18n apply
+```
+把修改写回语言包,无需逐个查 hash。
+
+> `diff.json` 含未应用的修改时,再次 `npx i18n` 会询问是否覆盖(避免丢失修改)。
+
+## 运行时 API
+
+```ts
+import { i18n, extendLocale, changeLanguage, getCurrentLng } from 'i18n-auto-plugin'
+```
+
+- `i18n(hash, data?)`:翻译函数,`data` 用于插值(`{{key}}`)
+- `extendLocale(lngMap)`:注册语言包数据
+- `changeLanguage(lng, autoLoad = true)`:切换语言,默认刷新页面
+- `getCurrentLng()`:获取当前语言
+
+插值示例:
+```ts
+// 源码:`测试模板：你好${name}`  →  hash + 占位符 {{@1}}
+// 运行时:i18n('hash', { '@1': name })
+```
+
+语言包格式:
+- `splitLngFile: false`:`{ [id]: { [lng]: text } }`(单文件)
+- `splitLngFile: true`:`{ [lng]: { [id]: text } }`(分文件,注册文件自动转换)
+
+## 注意事项
+
+- **Vue2 不支持**:依赖 `@vue/compiler-sfc`(Vue3),且注入 `<script setup>` 块 Vue2 无法消费。
+- **webpack + thread-loader**:unplugin loader 与 thread-loader 序列化冲突(Compiler 循环引用),vue-cli 需 `parallel: false`。Rspack 内置多线程,无此问题。
+- **扫描与转换一致**:CLI 扫描与构建插件转换共用同一套 babel visitor + Vue template walker,保证 hash 一致。模板内 JS 表达式(`{{ '中文' }}`、`:label="'中文'"`)两侧一致跳过。
+- **缓存**:扫描缓存位于 `node_modules/.cache/i18n-auto-plugin`,源文件 mtime/内容变化自动失效。修改 `excludeCall`/`test` 等配置也会失效。
+- **新增语言**:需同时改 `src/types/index.d.ts` 的 `LngType`、`src/utils/config.ts` 的 `lngList`、`src/index.ts` 的 `lngList`。
+
+## License
+
+MIT
