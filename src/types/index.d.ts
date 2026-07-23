@@ -322,23 +322,28 @@ export interface I18nConfig {
   translateService: TranslateServiceType | TranslateServiceType[]
   /**
    * 百度通用文本翻译配置
+   * @see https://fanyi-api.baidu.com/doc/23
    */
   baidu?: BaiduTranslateServiceConfig
   /**
    * 百度大模型文本翻译配置
+   * @see https://fanyi-api.baidu.com/doc/21
    */
   baiduAi?: BaiduAiTranslateServiceConfig
   /**
    * 有道翻译配置
+   * @see https://ai.youdao.com/DOCSIRMA/html/trans/api/plwbfy/
    */
   youdao?: TranslateServiceConfig
   /**
    * 有道大模型文本翻译配置
    * 接口为流式 SSE 返回,一次请求翻译一批文本(用占位符拼接)
+   * @see https://ai.youdao.com/DOCSIRMA/html/trans/api/dmxfy/
    */
   youdaoAi?: YoudaoAiTranslateServiceConfig
   /**
    * Google Cloud Translation v2 配置(国内需配 proxy 或环境变量 HTTPS_PROXY)
+   * @see https://cloud.google.com/translate/docs/reference/rest/v2/translate
    */
   google?: GoogleTranslateServiceConfig
 
