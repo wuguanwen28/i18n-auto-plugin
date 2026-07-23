@@ -53,4 +53,26 @@ cli
     apply.run()
   })
 
+// 语料体检:报告死键、缺失翻译、覆盖率(只读)
+cli
+  .command('check', 'Check locale health: dead keys, missing translations, coverage')
+  .option('-c, --config <file>', 'use specified config file')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
+  .action(async (options: any) => {
+    const { Check } = await import('../commands/Check')
+    const check = new Check(options)
+    check.run()
+  })
+
+// 清理死键:确认后从语言包删除代码中已删除的文案
+cli
+  .command('prune', 'Remove dead keys (deleted from code) from locale files')
+  .option('-c, --config <file>', 'use specified config file')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
+  .action(async (options: any) => {
+    const { Prune } = await import('../commands/Prune')
+    const prune = new Prune(options)
+    prune.run()
+  })
+
 cli.parse()

@@ -27,7 +27,6 @@ i18n-auto-plugin 是一个自动国际化工具：扫描项目中的中文文本
 - package.json `exports` 映射 `./vite` 和 `./webpack` 子路径，import/require 双条件。
 - `__NAME__` 和 `__VERSION__` 是构建期由 @rollup/plugin-replace 注入的全局占位符（源码中直接使用，见 src/types/global.d.ts）。修改包名/版本无需改源码。
 - 改动构建后验证方式：ESM/CJS 分别加载两个插件产物确认不抛错，然后跑 `examples/react-vite`（`npx vite build`）和 `examples/react-webpack`（`pnpm build`），在产物中确认中文被替换为 `xx("<16位hash>")` 调用。
-- 已知 bug 清单见 BUGS.md。
 
 ## Architecture
 

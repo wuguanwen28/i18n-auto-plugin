@@ -3,14 +3,8 @@ import path from 'node:path'
 import chalk from 'chalk'
 
 import {
-  getConfiguration,
-  getExportPrefix,
   getHash,
-  getOutputMap,
-  mkdirSync,
-  prettierCode,
   replaceTemplateExpr,
-  resolveFile,
   scanFile,
   time,
 } from '../utils'
@@ -18,50 +12,31 @@ import translatorMap, { BaiduTranslator } from '../translators'
 import type { Translator } from '../translators/Translator'
 import {
   Configuration,
-  LanguagesMap,
   LanguagesMapById,
-  LngType,
-  LoggerLevel,
-  OutputMap,
   TranslateOptions,
   TranslateServiceType,
 } from '../types'
-import { DEFAULT_CONFIG, DEFAULT_EXCLUDE_CALL, lngList } from '../utils/config'
+import { DEFAULT_EXCLUDE_CALL } from '../utils/config'
 import { logger } from '../utils/logger'
 import { cacheManager } from '../utils/cache'
 import { isAllowTranslate, parseAst, resolveTraverse } from '../utils/parse'
 import { extractVueSfc } from '../plugins/vue-sfc'
 import { generateRegisterFile } from './RegisterFile'
+import { LocaleCommand } from './LocaleCommand'
 
 const traverse = resolveTraverse()
 
-export class Translate {
-  customConfigPath?: string
-
-  /** CLI --no-cache 时为 false,覆盖配置中的 cache */
-  cliCache?: boolean
-
-  /** CLI --logger,覆盖配置中的 logger */
-  cliLogger?: LoggerLevel
-
+export class Translate extends LocaleCommand {
   /** CLI scan 命令:只扫描写语料,跳过翻译 */
   skipTranslate?: boolean
 
   /** CLI --force:强制重新翻译,覆盖配置中的 forceTranslate */
   cliForceTranslate?: boolean
 
-  config!: Configuration
-
   count = 0
 
-  languagesMap: LanguagesMapById = {}
-
-  outputMap: OutputMap = {}
-
   constructor(options: TranslateOptions = {}) {
-    this.customConfigPath = options.config
-    this.cliCache = options.cache
-    this.cliLogger = options.logger
+    super(options)
     this.skipTranslate = options.skipTranslate
     this.cliForceTranslate = options.force
   }
@@ -88,41 +63,9 @@ export class Translate {
   }
 
   async initConfig() {
-    const config = await getConfiguration(this.customConfigPath)
-    if (!config) {
-      logger.error(
-        `配置文件不存在，请执行 ${chalk.bold.green('npx i18n init')} 初始化`,
-      )
-      process.exit(0)
-    }
-    this.config = { ...DEFAULT_CONFIG, ...config }
-    // cac 声明 --no-cache 后未传参也会得到 cache: true,
-    // 因此仅在显式传入 --no-cache(false)时覆盖配置
-    if (this.cliCache === false) this.config.cache = false
-    // --logger 覆盖配置中的日志级别
-    if (this.cliLogger) this.config.logger = this.cliLogger
+    await super.initConfig()
     // --force 覆盖配置中的 forceTranslate
     if (this.cliForceTranslate) this.config.forceTranslate = true
-    this.outputMap = getOutputMap(this.config)
-    logger.setLogLevel(this.config.logger)
-  }
-
-  /** 获取旧的语言映射 */
-  async getOldLanguagesMap() {
-    const outputMap = this.outputMap
-    const mainPath = outputMap.main
-    if (mainPath && fs.existsSync(mainPath)) {
-      const content = await resolveFile(mainPath)
-      this.languagesMap = content || {}
-    } else {
-      for (const lng in outputMap) {
-        const filePath = outputMap[lng]
-        if (filePath && fs.existsSync(filePath)) {
-          const content = await resolveFile(filePath)
-          this.mergeLanguagesMap({ [lng]: content })
-        }
-      }
-    }
   }
 
   /** 获取新的语言映射 */
@@ -205,43 +148,6 @@ export class Translate {
     this.mergeLanguagesMap(languagesMap)
   }
 
-  /** 写入语言映射 */
-  async writeLanguagesMap(targetLng?: LngType) {
-    const outputMap = this.outputMap
-    const { splitLngFile } = this.config.output
-
-    const writeFile = async (filepath: string, code: string) => {
-      mkdirSync(path.dirname(filepath))
-      const finalCode = getExportPrefix(filepath) + code
-      const content = await prettierCode(finalCode, { filepath })
-      fs.writeFileSync(filepath, content)
-    }
-
-    try {
-      if (!splitLngFile && outputMap.main) {
-        const filePath = outputMap.main
-        const code = JSON.stringify(this.languagesMap, null, 2)
-        await writeFile(filePath, code)
-        return
-      }
-
-      if (splitLngFile) {
-        for (const lng in outputMap) {
-          if (targetLng && targetLng !== lng) continue
-          const filePath = outputMap[lng]
-          const lngMap = Object.keys(this.languagesMap).reduce((prev, key) => {
-            prev[key] = this.languagesMap[key][lng] || ''
-            return prev
-          }, {})
-          const code = JSON.stringify(lngMap, null, 2)
-          await writeFile(filePath, code)
-        }
-      }
-    } catch (error) {
-      logger.error(error as Error)
-    }
-  }
-
   /** 翻译 */
   async translate() {
     const { translateService } = this.config
@@ -281,26 +187,6 @@ export class Translate {
         `translateService 含 ${missing.join(', ')},但未配置对应的密钥,请补全配置`,
       )
       process.exit(0)
-    }
-  }
-
-  /** 合并语言映射 */
-  mergeLanguagesMap(currentMap: LanguagesMap | null) {
-    if (!currentMap) return
-    for (const idOrLng in currentMap) {
-      const item = currentMap[idOrLng]
-      if (!item || typeof item !== 'object') continue
-      if (lngList.includes(idOrLng as any)) {
-        for (let id in item) {
-          this.languagesMap[id] ||= {}
-          this.languagesMap[id][idOrLng] = item[id]
-        }
-      } else {
-        for (let lng in item) {
-          this.languagesMap[idOrLng] ||= {}
-          this.languagesMap[idOrLng][lng] = item[lng]
-        }
-      }
     }
   }
 }

@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { Translate } from './Translate'
+import { LocaleCommand } from './LocaleCommand'
 import { DiffReport, LngType } from '../types'
 import { resolveFile } from '../utils'
 import { logger } from '../utils/logger'
@@ -15,7 +15,7 @@ import { logger } from '../utils/logger'
  * 流程:initConfig -> 读语言包 -> 应用 diff suggested -> 写语言包
  * (不扫描、不翻译,只根据 diff.json 修改已有语言包)
  */
-export class Apply extends Translate {
+export class Apply extends LocaleCommand {
   async run() {
     try {
       await this.initConfig()
