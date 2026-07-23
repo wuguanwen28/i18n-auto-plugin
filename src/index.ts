@@ -1,7 +1,5 @@
-import { LanguagesMap, LanguagesMapByLocale, LngType } from './types/index'
+import { LanguagesMapById, LanguagesMapByLocale, LngType } from './types/index'
 export type * from './types/index'
-
-const lngList: LngType[] = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'zh-TW']
 
 const isObj = (obj: any) => typeof obj === 'object' && obj !== null
 
@@ -71,33 +69,23 @@ export class I18nManager {
   i18n: TranslateFn = this._createTranslator()
 
   /**
-   * 扩展语言包数据
-   * @param config 语言包数据
+   * 扩展语言包数据(仅接收 by-locale 格式:{ lng: { id: text } })
+   * @param lngMap by-locale 语言包数据
    * @param cover 是否覆盖
+   *
+   * 磁盘单文件为 by-id(便于人工横向校对各语种译文),由注册文件通过
+   * toByLocale 转置为 by-locale 后再注入;此处不再猜测格式,故不依赖 lngList。
    */
-  extendLocale(lngMap: LanguagesMap, cover: boolean = false) {
+  extendLocale(lngMap: LanguagesMapByLocale, cover: boolean = false) {
     if (!isObj(lngMap)) return
 
-    for (let _key in lngMap) {
-      const key = _key as LngType
-      const item = lngMap[key] || {}
+    for (let lng in lngMap) {
+      const item = lngMap[lng] || {}
       if (!isObj(item)) continue
-
-      // 语言列表中的键值，直接合并
-      if (lngList.includes(key)) {
-        if (!this._locales[key]) this._locales[key] = {}
-        for (let id in item) {
-          const oldValue = this._locales[key][id] || item[id]
-          this._locales[key][id] = cover ? item[id] : oldValue
-        }
-      }
-      // 非语言列表中的键值，默认添加到所有语言包中
-      else {
-        for (let lng in item) {
-          if (!this._locales[lng]) this._locales[lng] = {}
-          const oldValue = this._locales[lng][key] || item[lng]
-          this._locales[lng][key] = cover ? item[lng] : oldValue
-        }
+      if (!this._locales[lng]) this._locales[lng] = {}
+      for (let id in item) {
+        const oldValue = this._locales[lng][id] || item[id]
+        this._locales[lng][id] = cover ? item[id] : oldValue
       }
     }
   }
@@ -143,3 +131,26 @@ export const extendLocale = i18nManager.extendLocale.bind(i18nManager)
 export const removeLocale = i18nManager.removeLocale.bind(i18nManager)
 export const getCurrentLng = i18nManager.getCurrentLng.bind(i18nManager)
 export const changeLanguage = i18nManager.changeLanguage.bind(i18nManager)
+
+/**
+ * by-id 转 by-locale 纯转置:{ id: { lng: text } } -> { lng: { id: text } }
+ *
+ * 不依赖语种列表,纯结构操作。磁盘单文件存 by-id(便于人工校对各语种译文),
+ * 注册文件转成 by-locale 后注入运行时,使 extendLocale 不必猜测格式。
+ */
+export const toByLocale = (
+  byId: LanguagesMapById,
+): LanguagesMapByLocale => {
+  const byLocale: LanguagesMapByLocale = {}
+  for (const id in byId) {
+    const item = byId[id]
+    if (!isObj(item)) continue
+    for (const lng in item) {
+      const v = item[lng as LngType]
+      if (v == null) continue
+      const slot = byLocale[lng as LngType] || (byLocale[lng as LngType] = {})
+      slot[id] = v
+    }
+  }
+  return byLocale
+}

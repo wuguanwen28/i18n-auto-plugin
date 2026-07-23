@@ -61,11 +61,12 @@ export const buildRegisterCode = (
   if (!output.splitLngFile) {
     if (!outputMap.main) return null
     const jsonPath = toImportPath(registerPath, outputMap.main)
+    // 单文件存 by-id(便于人工校对),转成 by-locale 后注入运行时
     return (
       FILE_HEADER +
       `import lngMap from '${jsonPath}'\n` +
-      `import { extendLocale } from '${source}'\n\n` +
-      `extendLocale(lngMap)\n`
+      `import { extendLocale, toByLocale } from '${source}'\n\n` +
+      `extendLocale(toByLocale(lngMap))\n`
     )
   }
 
