@@ -75,4 +75,37 @@ cli
     prune.run()
   })
 
+// 导出语言包为 CSV,交给翻译人员校对
+cli
+  .command('export', 'Export locale to CSV for translators')
+  .option('-o, --out <file>', 'output CSV path (default: <output.dir>/i18n.csv)')
+  .option('--missing', 'only export rows with missing translations')
+  .option('-c, --config <file>', 'use specified config file')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
+  .action(async (options: any) => {
+    const { Export } = await import('../commands/Export')
+    const exp = new Export(options)
+    exp.run()
+  })
+
+// 从校对好的 CSV 写回语言包
+cli
+  .command('import [file]', 'Import translations from a CSV back into locale files')
+  .option('--fill-only', 'only fill blank translations (default: overwrite all)')
+  .option('-c, --config <file>', 'use specified config file')
+  .option('--logger <level>', 'Log level: none | error | warn | info')
+  .action(async (file: string | undefined, options: any) => {
+    // 用 [file] 可选参数 + 自校验,避免 cac 对缺失必填参数抛出未捕获异常
+    if (!file) {
+      const { logger } = await import('../utils/logger')
+      logger.error(
+        '请提供要导入的 CSV 文件路径,例如:npx i18n import ./src/locale/i18n.csv',
+      )
+      return
+    }
+    const { Import } = await import('../commands/Import')
+    const imp = new Import(file, options)
+    imp.run()
+  })
+
 cli.parse()
