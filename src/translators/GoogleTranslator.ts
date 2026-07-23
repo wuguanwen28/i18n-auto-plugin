@@ -14,13 +14,26 @@ export class GoogleTranslator extends Translator {
 
   serverConfig!: GoogleTranslateServiceConfig
 
-  // Google 语种代码:简体 zh-CN、繁体 zh-TW(与项目 LngType 一致,映射最简单)
-  lngTypeMap: Record<LngType, string> = {
-    'zh-CN': 'zh-CN',
-    'zh-TW': 'zh-TW',
-    'en-US': 'en',
-    'ja-JP': 'ja',
-    'ko-KR': 'ko',
+  serviceGroup = 'google'
+
+  /** 项目语种 -> Google Cloud Translation API 语种代码(标准 BCP 47,中文保留 region) */
+  lngTypeMap: Record<string, string> = {
+    'zh-CN': 'zh-CN', // 中文(简体)
+    'zh-TW': 'zh-TW', // 中文(繁体)
+    'en-US': 'en', // 英语
+    'ja-JP': 'ja', // 日语
+    'ko-KR': 'ko', // 韩语
+    'fr-FR': 'fr', // 法语
+    'de-DE': 'de', // 德语
+    'es-ES': 'es', // 西班牙语
+    'ru-RU': 'ru', // 俄语
+    'ar-SA': 'ar', // 阿拉伯语
+    'pt-BR': 'pt-BR', // 葡萄牙语(巴西)
+    'it-IT': 'it', // 意大利语
+    'th-TH': 'th', // 泰语
+    'vi-VN': 'vi', // 越南语
+    'nl-NL': 'nl', // 荷兰语
+    'pl-PL': 'pl', // 波兰语
   }
 
   /** 代理是否已设置全局 dispatcher,避免重复设置 */
@@ -96,8 +109,8 @@ export class GoogleTranslator extends Translator {
     toLang: LngType,
   ) {
     const { apiKey } = this.serverConfig
-    const from = this.lngTypeMap[fromLang] || 'auto'
-    const to = this.lngTypeMap[toLang] || 'en'
+    const from = this.resolveLngCode(fromLang)
+    const to = this.resolveLngCode(toLang)
     const q = Object.values(texts)
 
     const url = `${this.url}?key=${apiKey}`

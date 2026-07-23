@@ -110,6 +110,7 @@ export abstract class LocaleCommand {
         for (const lng in outputMap) {
           if (targetLng && targetLng !== lng) continue
           const filePath = outputMap[lng]
+          if (!filePath) continue
           const lngMap = Object.keys(this.languagesMap).reduce((prev, key) => {
             prev[key] = this.languagesMap[key][lng] || ''
             return prev
@@ -124,12 +125,22 @@ export abstract class LocaleCommand {
   }
 
   /** 合并语言映射 */
+  /**
+   * 语种 key 集合:内置 lngList + 配置 languages + originLang
+   * 用于判别语言包格式/CSV 列名,使自定义语种也能正确识别(不只用内置 lngList)
+   */
+  protected getLocaleKeys(): Set<string> {
+    const { languages = [], originLang } = this.config
+    return new Set([...lngList, ...languages, originLang])
+  }
+
   mergeLanguagesMap(currentMap: LanguagesMap | null) {
     if (!currentMap) return
+    const localeKeys = this.getLocaleKeys()
     for (const idOrLng in currentMap) {
       const item = currentMap[idOrLng]
       if (!item || typeof item !== 'object') continue
-      if (lngList.includes(idOrLng as any)) {
+      if (localeKeys.has(idOrLng)) {
         for (let id in item) {
           this.languagesMap[id] ||= {}
           this.languagesMap[id][idOrLng] = item[id]

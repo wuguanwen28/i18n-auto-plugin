@@ -16,12 +16,26 @@ export class BaiduTranslator extends Translator {
 
   serverConfig!: BaiduTranslateServiceConfig
 
-  lngTypeMap: Record<LngType, string> = {
-    'zh-CN': 'zh',
-    'zh-TW': 'cht',
-    'en-US': 'en',
-    'ja-JP': 'jp',
-    'ko-KR': 'kor',
+  serviceGroup = 'baidu'
+
+  /** 项目语种 -> 百度翻译 API 语种代码(内置 16 种,按百度个人版支持口径) */
+  lngTypeMap: Record<string, string> = {
+    'zh-CN': 'zh', // 中文(简体)
+    'zh-TW': 'cht', // 中文(繁体)
+    'en-US': 'en', // 英语
+    'ja-JP': 'jp', // 日语
+    'ko-KR': 'kor', // 韩语
+    'fr-FR': 'fra', // 法语
+    'de-DE': 'de', // 德语
+    'es-ES': 'spa', // 西班牙语
+    'ru-RU': 'ru', // 俄语
+    'ar-SA': 'ara', // 阿拉伯语
+    'pt-BR': 'pt', // 葡萄牙语(巴西)
+    'it-IT': 'it', // 意大利语
+    'th-TH': 'th', // 泰语
+    'vi-VN': 'vie', // 越南语
+    'nl-NL': 'nl', // 荷兰语
+    'pl-PL': 'pl', // 波兰语
   }
 
   /** 校验百度翻译配置是否齐全 */
@@ -107,8 +121,8 @@ export class BaiduTranslator extends Translator {
     const { appId, appKey, ...otherParams } = this.serverConfig
 
     const salt = Date.now().toString()
-    const to = this.lngTypeMap[toLang] || 'en'
-    const from = this.lngTypeMap[fromLang] || 'auto'
+    const to = this.resolveLngCode(toLang)
+    const from = this.resolveLngCode(fromLang)
     const q = Object.values(texts).join('\n')
     const buffer = Buffer.from(`${appId}${q}${salt}${appKey}`)
     const sign = crypto.createHash('md5').update(buffer).digest('hex')

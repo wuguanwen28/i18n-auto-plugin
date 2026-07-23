@@ -22,6 +22,18 @@ export abstract class Translator {
   serviceTranslators?: Partial<Record<TranslateServiceType, Translator>>
 
   /**
+   * 服务族:用于 langMap 按族查表。子类设置(baidu/baiduAi='baidu',
+   * youdao/youdaoAi='youdao',google='google')。Custom 不设(不经过 resolveLngCode)
+   */
+  serviceGroup?: string
+
+  /**
+   * 项目语种 -> 本服务 API 语种代码(内置常用语种映射)
+   * 自定义语种不在内,走 config.langMap;resolveLngCode 统一查表
+   */
+  lngTypeMap: Record<string, string> = {}
+
+  /**
    * 校验本服务配置是否齐全(各子类实现)
    * 供 validateTranslateServices 启动校验与构造函数认领配置共用,避免判断逻辑重复
    */
@@ -32,6 +44,25 @@ export abstract class Translator {
   constructor(options: TranslatorOptions) {
     this.config = options.config
     this.languagesMap = options.languagesMap
+  }
+
+  /**
+   * 解析语种到本服务的 API 代码
+   * 查表顺序:config.langMap[语种][服务族] -> 内置 lngTypeMap[语种]
+   * 都没有则报错中断(避免自定义语种静默兜底成 en 而翻错)
+   */
+  protected resolveLngCode(lng: string): string {
+    const group = this.serviceGroup
+    const code =
+      (group && this.config.langMap?.[lng]?.[group]) || this.lngTypeMap[lng]
+    if (!code) {
+      logger.error(
+        `语种 ${chalk.bold(lng)} 在 ${group || this.constructor.name} 翻译服务无映射,` +
+          `请在配置 langMap 中补充,例如:langMap: { '${lng}': { ${group || 'baidu'}: '对应API代码' } }`,
+      )
+      process.exit(0)
+    }
+    return code
   }
 
   /**

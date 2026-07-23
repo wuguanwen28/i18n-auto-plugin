@@ -107,8 +107,8 @@ export class YoudaoAiTranslator extends YoudaoTranslator {
     toLang: LngType,
   ): Promise<string> {
     const { appId, appKey, handleOption = 0, prompt, vocabId } = this.serverConfig
-    const from = this.lngTypeMap[fromLang] || 'auto'
-    const to = this.lngTypeMap[toLang] || 'en'
+    const from = this.resolveLngCode(fromLang)
+    const to = this.resolveLngCode(toLang)
 
     // input 计算(与普通版一致):i 前10 + 长度 + 后10(>20时)
     const input =

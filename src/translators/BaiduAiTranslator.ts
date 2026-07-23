@@ -62,8 +62,8 @@ export class BaiduAiTranslator extends BaiduTranslator {
         ...otherParams,
         appid: appId,
         q: Object.values(texts).join('\n'),
-        to: this.lngTypeMap[toLang] || 'en',
-        from: this.lngTypeMap[fromLang] || 'auto',
+        to: this.resolveLngCode(toLang),
+        from: this.resolveLngCode(fromLang),
       }),
     }).then((res) => res.json())
   }

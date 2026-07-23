@@ -15,13 +15,26 @@ export class YoudaoTranslator extends Translator {
 
   serverConfig!: TranslateServiceConfig
 
-  // 有道语种代码:简体为 zh-CHS(注意不是 zh-CN),繁体 zh-CHT
-  lngTypeMap: Record<LngType, string> = {
-    'zh-CN': 'zh-CHS',
-    'zh-TW': 'zh-CHT',
-    'en-US': 'en',
-    'ja-JP': 'ja',
-    'ko-KR': 'ko',
+  serviceGroup = 'youdao'
+
+  /** 项目语种 -> 有道翻译 API 语种代码(简体 zh-CHS、繁体 zh-CHT,注意非 zh-CN) */
+  lngTypeMap: Record<string, string> = {
+    'zh-CN': 'zh-CHS', // 中文(简体)
+    'zh-TW': 'zh-CHT', // 中文(繁体)
+    'en-US': 'en', // 英语
+    'ja-JP': 'ja', // 日语
+    'ko-KR': 'ko', // 韩语
+    'fr-FR': 'fr', // 法语
+    'de-DE': 'de', // 德语
+    'es-ES': 'es', // 西班牙语
+    'ru-RU': 'ru', // 俄语
+    'ar-SA': 'ar', // 阿拉伯语
+    'pt-BR': 'pt', // 葡萄牙语
+    'it-IT': 'it', // 意大利语
+    'th-TH': 'th', // 泰语
+    'vi-VN': 'vi', // 越南语
+    'nl-NL': 'nl', // 荷兰语
+    'pl-PL': 'pl', // 波兰语
   }
 
   /** 校验有道翻译配置是否齐全 */
@@ -97,8 +110,8 @@ export class YoudaoTranslator extends Translator {
     toLang: LngType,
   ) {
     const { appId, appKey } = this.serverConfig
-    const from = this.lngTypeMap[fromLang] || 'auto'
-    const to = this.lngTypeMap[toLang] || 'en'
+    const from = this.resolveLngCode(fromLang)
+    const to = this.resolveLngCode(toLang)
 
     // 文本数组:多 q 字段方式提交,与返回 translateResults 一一对应
     const qList = Object.values(texts)

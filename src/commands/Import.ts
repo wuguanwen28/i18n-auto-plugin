@@ -4,7 +4,6 @@ import chalk from 'chalk'
 
 import { decodeCsvBuffer, parseCsv } from '../utils/csv'
 import { LngType, TranslateOptions } from '../types'
-import { lngList } from '../utils/config'
 import { logger } from '../utils/logger'
 import { LocaleCommand } from './LocaleCommand'
 
@@ -85,14 +84,11 @@ export class Import extends LocaleCommand {
     // 原文列:源不是译文,排除不写回
     const originIdx = header.indexOf(originLang)
 
-    // 表头列名 -> 语种,保留合法语种列;排除 id 列与原文列
+    // 表头列名 -> 语种,保留合法语种列(内置 + 配置自定义);排除 id 列与原文列
+    const localeKeys = this.getLocaleKeys()
     const lngCols: Array<{ idx: number; lng: LngType }> = []
     header.forEach((name, idx) => {
-      if (
-        idx !== idIdx &&
-        idx !== originIdx &&
-        lngList.includes(name as LngType)
-      ) {
+      if (idx !== idIdx && idx !== originIdx && localeKeys.has(name)) {
         lngCols.push({ idx, lng: name as LngType })
       }
     })

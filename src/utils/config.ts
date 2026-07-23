@@ -42,4 +42,26 @@ export const DEFAULT_CONFIG: I18nConfig = {
 
 export const ZH_EXT = /[\u4e00-\u9fa5]+/
 
-export const lngList: LngType[] = ['zh-CN', 'en-US', 'ja-JP', 'ko-KR', 'zh-TW']
+/**
+ * 内置语种列表(与 LngType 内置 16 种保持一致,按百度个人版支持口径)
+ * 判别语言包格式/CSV 列名时,getLocaleKeys 会合并本表 + config.languages + originLang,
+ * 故自定义语种也能正确识别
+ */
+export const lngList: LngType[] = [
+  'zh-CN', // 中文(简体)
+  'zh-TW', // 中文(繁体)
+  'en-US', // 英语
+  'ja-JP', // 日语
+  'ko-KR', // 韩语
+  'fr-FR', // 法语
+  'de-DE', // 德语
+  'es-ES', // 西班牙语
+  'ru-RU', // 俄语
+  'ar-SA', // 阿拉伯语
+  'pt-BR', // 葡萄牙语(巴西)
+  'it-IT', // 意大利语
+  'th-TH', // 泰语
+  'vi-VN', // 越南语
+  'nl-NL', // 荷兰语
+  'pl-PL', // 波兰语
+]

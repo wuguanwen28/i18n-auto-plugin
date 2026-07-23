@@ -34,7 +34,36 @@ export type TranslateOptions = {
 
 export type LoggerLevel = 'error' | 'warn' | 'info' | 'none'
 
-export type LngType = 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR' | 'zh-TW'
+/**
+ * 语种类型
+ * 内置 16 种常用语种(按百度个人版支持口径,IDE 有自动补全),
+ * 并通过 (string & {}) 接受任意自定义语种。自定义语种需在 langMap 配置对应翻译服务代码,否则翻译时报错。
+ */
+export type LngType =
+  | 'zh-CN' // 中文(简体)
+  | 'zh-TW' // 中文(繁体)
+  | 'en-US' // 英语
+  | 'ja-JP' // 日语
+  | 'ko-KR' // 韩语
+  | 'fr-FR' // 法语
+  | 'de-DE' // 德语
+  | 'es-ES' // 西班牙语
+  | 'ru-RU' // 俄语
+  | 'ar-SA' // 阿拉伯语
+  | 'pt-BR' // 葡萄牙语(巴西)
+  | 'it-IT' // 意大利语
+  | 'th-TH' // 泰语
+  | 'vi-VN' // 越南语
+  | 'nl-NL' // 荷兰语
+  | 'pl-PL' // 波兰语
+  | (string & {}) // 自定义语种(需配 langMap)
+
+/**
+ * 翻译服务族:同族服务共用一套语种映射
+ * (baidu 与 baiduAi 属 baidu 族,youdao 与 youdaoAi 属 youdao 族,google 独立)
+ * langMap 按服务族查表,配一次同族服务通用
+ */
+export type TranslateServiceGroup = 'baidu' | 'youdao' | 'google'
 
 /**
  * 语言映射表 - 按键
@@ -51,7 +80,7 @@ export type LngType = 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR' | 'zh-TW'
  * }
  */
 export type LanguagesMapById = {
-  [id: string]: { [key in LngType]?: string }
+  [id: string]: { [lng: string]: string }
 }
 
 /**
@@ -69,7 +98,7 @@ export type LanguagesMapById = {
  * }
  */
 export type LanguagesMapByLocale = {
-  [lng in LngType]?: { [id: string]: string }
+  [lng: string]: { [id: string]: string }
 }
 
 export type LanguagesMap = LanguagesMapById | LanguagesMapByLocale
@@ -300,14 +329,22 @@ export interface I18nConfig {
    */
   excludeCall?: Array<string>
   /**
-   * 原始语种
+   * 原始语种(源语言)
    * tip: 暂只支持中文
    */
-  originLang?: 'zh-CN'
+  originLang?: LngType
   /**
    * 要翻译的语种
+   * 内置 16 种常用语种已预置各服务映射,自定义语种需配 langMap
    */
   languages?: LngType[]
+  /**
+   * 自定义语种到各翻译服务 API 代码的映射
+   * 仅自定义语种(不在内置 20 种内)需要配置;内置语种已预置映射
+   * @example
+   * langMap: { 'fr-CA': { baidu: 'fra', youdao: 'fr', google: 'fr' } }
+   */
+  langMap?: { [lng: string]: Partial<Record<TranslateServiceGroup, string>> }
   /**
    * 每次翻译的文本数量
    * @default 100
