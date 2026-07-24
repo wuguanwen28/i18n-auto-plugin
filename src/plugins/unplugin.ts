@@ -9,6 +9,7 @@ import {
   readLanguagesMap,
   sliceText,
 } from '../utils'
+import chalk from 'chalk'
 
 export type Options = {
   /** i18n 配置文件路径，默认自动查找 i18n.config.js */
@@ -28,6 +29,10 @@ export const I18nAuto = createUnplugin((options: Options | undefined, meta) => {
   let config: Configuration | null = null
   let filter: ReturnType<typeof createFilter>
   let lngMap: LanguagesMapById = {}
+
+  // 已告警记录:多 output build(如 rolldown 单 config 多格式输出)会对同一文件
+  // 重复 transform,按 位置+文本 去重,避免同一 build 内警告翻倍
+  const warned = new Set<string>()
 
   const init = () => {
     if (config) return
@@ -61,6 +66,11 @@ export const I18nAuto = createUnplugin((options: Options | undefined, meta) => {
 
     transform(code, id) {
       const emitWarning = ({ text, line, column }: any) => {
+        // 多 output 重复 transform 时,同位置同文本只 warn 一次
+        const warnKey = `${id}|${line}|${column}|${text}`
+        if (warned.has(warnKey)) return
+        warned.add(warnKey)
+
         const base = `在语料库中未发现该文本【${sliceText(text)}】请更新语料库`
         if (meta.framework === 'webpack' || meta.framework === 'rspack') {
           // ModuleWarning 不读 warning.loc(见 webpack/lib/ModuleWarning.js),传 loc
@@ -76,7 +86,10 @@ export const I18nAuto = createUnplugin((options: Options | undefined, meta) => {
           return
         }
         // vite/rollup:loc 经 this.warn 原样透传
-        this.warn({ message: base, loc: { file: id, line, column } })
+        this.warn({
+          message: chalk.yellow(base),
+          loc: { file: id, line, column },
+        })
       }
 
       const importInfo = {
