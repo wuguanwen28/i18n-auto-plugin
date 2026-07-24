@@ -4,13 +4,17 @@
 
 ## 特性
 
-- 🔍 **自动扫描中文**:`JSXText` / `StringLiteral` / `TemplateLiteral`,以及 Vue SFC `<template>` 的文本与属性
+- 🔍 **自动扫描中文**:代码里的中文字符串、JSX 文本、模板字符串,以及 Vue `<template>` 里的文本与属性
 - 🌐 **多翻译服务**:百度、百度大模型、有道、有道大模型、Google、自定义翻译函数
 - 📦 **多构建工具**:Vite / Webpack / Rspack / Rolldown(基于 unplugin 统一实现)
 - 🎯 **Vue SFC 源码级改写**:template 文本 → `{{ _i18n(hash) }}` 插值,兼容 uni-app 小程序
 - 🔀 **多服务对比翻译**:多服务并行翻译,差异生成 `diff.json`,人工选定后 `apply` 应用
+- 🩺 **语料体检**:`check` 检测死键、缺失翻译、覆盖率,`prune` 清理无用的死键
+- 📊 **CSV 导入导出**:导出语言包给翻译人员校对,改完导回(支持 Excel 编辑)
+- 🌍 **自定义语言**:内置 16 种常用语种,可通过 `langMap` 扩展任意语种
 - 💾 **文件级缓存**:扫描结果按 mtime + 内容 hash 缓存,增量扫描
 - 🔧 **配置继承**:monorepo 子包可 `extends` 根配置
+- 🔁 **QPS 限流 + 失败重试**:避免触发翻译服务频率限制,失败自动指数退避重试
 
 ## 安装
 
@@ -109,11 +113,16 @@ changeLanguage('en-US')  // 默认刷新页面,加载新语言
 | `npx i18n` / `npx i18n translate` | 扫描 + 翻译 + 生成语言包与注册文件 |
 | `npx i18n scan` | 只扫描写语料,不调用翻译服务 |
 | `npx i18n apply` | 应用 `diff.json` 中修改后的 suggested 到语言包 |
+| `npx i18n check` | 语料体检:检测死键、缺失翻译、翻译覆盖率(只读) |
+| `npx i18n prune` | 清理死键(代码里已删除但语言包仍残留的文案) |
+| `npx i18n export` | 导出语言包为 CSV,交给翻译人员校对(`--missing` 只导缺失行) |
+| `npx i18n import <file>` | 从 CSV 写回语言包(默认覆盖,`--fill-only` 只填空白) |
 
 通用选项:
 - `-c, --config <file>`:指定配置文件
 - `--no-cache`:忽略缓存重新扫描
 - `--logger <level>`:日志级别 `none | error | warn | info`
+- `-f, --force`:`translate` 命令强制重新翻译已翻译的文本
 
 ## 配置说明
 
@@ -133,13 +142,27 @@ changeLanguage('en-US')  // 默认刷新页面,加载新语言
 | `include` | string \| string[] | `['src']` | 包含目录 |
 | `exclude` | string \| string[] | `['node_modules']` | 排除目录 |
 | `excludeCall` | string[] | `['i18n','console.log','console.warn','console.error']` | 跳过这些函数的参数翻译 |
-| `originLang` | `'zh-CN'` | `'zh-CN'` | 原始语言 |
-| `languages` | LngType[] | `['en-US']` | 目标语言(`zh-CN/en-US/ja-JP/ko-KR/zh-TW`) |
+| `originLang` | LngType | `'zh-CN'` | 原始语言(源语言,暂只支持中文) |
+| `languages` | LngType[] | `['en-US']` | 目标语言(内置 16 种,可自定义) |
 | `batchSize` | number | `100` | 翻译批次大小 |
+| `langMap` | object | - | 自定义语种到各翻译服务 API 代码的映射(见下) |
+| `retryTimes` | number | `3` | 翻译失败重试次数(指数退避 1s/2s/4s) |
+| `qps` | number | `0` | 每秒请求数限流(0 表示不限) |
+| `forceTranslate` | boolean | `false` | 强制重新翻译已翻译的文本 |
 | `cache` | boolean | `true` | 扫描缓存(按 mtime + 内容 hash) |
 | `logger` | LoggerLevel | `'info'` | 日志级别 |
 | `emitWarn` | boolean | `true` | 构建时语料库未收录文本是否告警 |
 | `translateService` | string \| string[] | `'baidu'` | 翻译服务(数组则对比模式) |
+
+**内置语种**(16 种):`zh-CN` `zh-TW` `en-US` `ja-JP` `ko-KR` `fr-FR` `de-DE` `es-ES` `ru-RU` `ar-SA` `pt-BR` `it-IT` `th-TH` `vi-VN` `nl-NL` `pl-PL`
+
+**自定义语种**:不在内置列表的语种(如 `fr-CA`),通过 `langMap` 配置各翻译服务的 API 代码:
+```js
+langMap: {
+  'fr-CA': { baidu: 'fra', youdao: 'fr', google: 'fr' }
+}
+```
+按服务族(`baidu`/`youdao`/`google`)查表:百度系(baidu/baiduAi)共用 `baidu`,有道系(youdao/youdaoAi)共用 `youdao`。不配映射的自定义语种翻译时会报错(避免静默翻成英语)。
 
 `importInfo` 默认:
 ```js
@@ -150,11 +173,17 @@ changeLanguage('en-US')  // 默认刷新页面,加载新语言
 ## 翻译服务配置
 
 ### 百度翻译(`baidu`)
+
+文档:https://fanyi-api.baidu.com/doc/23
+
 ```js
 baidu: { appId: 'xxx', appKey: 'xxx', needIntervene: 0 }
 ```
 
 ### 百度大模型(`baiduAi`)
+
+文档:https://fanyi-api.baidu.com/doc/21
+
 ```js
 baiduAi: {
   appId: 'xxx',
@@ -165,11 +194,17 @@ baiduAi: {
 ```
 
 ### 有道翻译(`youdao`)
+
+文档:https://ai.youdao.com/DOCSIRMA/html/trans/api/plwbfy/
+
 ```js
 youdao: { appId: 'xxx', appKey: 'xxx' }
 ```
 
 ### 有道大模型(`youdaoAi`)
+
+文档:https://ai.youdao.com/DOCSIRMA/html/trans/api/dmxfy/
+
 ```js
 youdaoAi: {
   appId: 'xxx', appKey: 'xxx',
@@ -180,6 +215,9 @@ youdaoAi: {
 ```
 
 ### Google(`google`)
+
+文档:https://cloud.google.com/translate/docs/reference/rest/v2/translate
+
 ```js
 google: { apiKey: 'xxx', proxy: 'http://...' }
 ```
@@ -236,7 +274,8 @@ import { i18n, extendLocale, changeLanguage, getCurrentLng } from 'i18n-auto-plu
 ```
 
 - `i18n(hash, data?)`:翻译函数,`data` 用于插值(`{{key}}`)
-- `extendLocale(lngMap)`:注册语言包数据
+- `extendLocale(lngMap)`:注册语言包数据(接收 `{ 语种: { id: 文本 } }` 格式)
+- `toByLocale(map)`:把 `{ id: { 语种: 文本 } }` 转成上面那种(单文件语言包手动注册时用)
 - `changeLanguage(lng, autoLoad = true)`:切换语言,默认刷新页面
 - `getCurrentLng()`:获取当前语言
 
@@ -247,8 +286,8 @@ import { i18n, extendLocale, changeLanguage, getCurrentLng } from 'i18n-auto-plu
 ```
 
 语言包格式:
-- `splitLngFile: false`:`{ [id]: { [lng]: text } }`(单文件)
-- `splitLngFile: true`:`{ [lng]: { [id]: text } }`(分文件,注册文件自动转换)
+- `splitLngFile: false`:`{ [id]: { [lng]: text } }`(单文件,注册文件自动用 `toByLocale` 转换后注入)
+- `splitLngFile: true`:`{ [lng]: { [id]: text } }`(分文件,直接注入)
 
 ## 注意事项
 
@@ -256,7 +295,7 @@ import { i18n, extendLocale, changeLanguage, getCurrentLng } from 'i18n-auto-plu
 - **webpack + thread-loader**:unplugin loader 与 thread-loader 序列化冲突(Compiler 循环引用),vue-cli 需 `parallel: false`。Rspack 内置多线程,无此问题。
 - **扫描与转换一致**:CLI 扫描与构建插件转换共用同一套 babel visitor + Vue template walker,保证 hash 一致。模板内 JS 表达式(`{{ '中文' }}`、`:label="'中文'"`)两侧一致跳过。
 - **缓存**:扫描缓存位于 `node_modules/.cache/i18n-auto-plugin`,源文件 mtime/内容变化自动失效。修改 `excludeCall`/`test` 等配置也会失效。
-- **新增语言**:需同时改 `src/types/index.d.ts` 的 `LngType`、`src/utils/config.ts` 的 `lngList`、`src/index.ts` 的 `lngList`。
+- **新增语言**:内置 16 种常用语种(见配置说明)。其他语种通过 `langMap` 配置即可,无需改源码。
 
 ## License
 
