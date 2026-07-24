@@ -265,6 +265,13 @@ export interface I18nConfig {
      * @default 'diff.json'
      */
     diffFile?: string
+    /**
+     * 是否生成差异报告(diff.json)
+     * - true:生成;false:不生成
+     * - 未显式配置时,默认翻译服务 > 2 个才生成(此时多数一致判断才有意义)
+     * @default translateService.length > 2
+     */
+    emitDiff?: boolean
   }
   /**
    * 是否开启缓存，如文件没有变化，不会重复解析

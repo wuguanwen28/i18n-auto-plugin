@@ -138,6 +138,8 @@ export abstract class Translator {
     const { languages, originLang = 'zh-CN', translateService } = this.config
     const services = translateService
     const primaryService = services[0]
+    // emitDiff 未显式配置时,默认翻译服务 > 2 个才生成(此时多数一致判断才有意义)
+    const emitDiff = this.config.output.emitDiff ?? translateService.length > 2
     const diffReport: DiffReport = {}
 
     for (const toLang of languages) {
@@ -206,8 +208,8 @@ export abstract class Translator {
             logger.warn(`所有服务翻译失败：${langMap[id]}`)
           }
 
-          // 差异条目进报告(consensus: true 的不进)
-          if (!consensus) {
+          // 差异条目进报告(consensus: true 的不进);emitDiff 关闭时跳过收集
+          if (emitDiff && !consensus) {
             langDiffItems.push({
               text: langMap[id],
               id,
@@ -224,8 +226,10 @@ export abstract class Translator {
       await callback?.(toLang)
     }
 
-    // 写差异报告
-    await writeDiffReport(this.config, diffReport, this.languagesMap)
+    // 写差异报告(emitDiff 关闭时跳过)
+    if (emitDiff) {
+      await writeDiffReport(this.config, diffReport, this.languagesMap)
+    }
 
     return this.languagesMap
   }

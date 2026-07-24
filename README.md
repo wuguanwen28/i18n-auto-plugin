@@ -137,6 +137,7 @@ changeLanguage('en-US')  // 默认刷新页面,加载新语言
 | `output.splitLngFile` | boolean | `false` | true:每个语种一个文件(`en-US.json` 等) |
 | `output.registerFile` | boolean \| string | `true` | 是否生成注册文件(加载语言包 + extendLocale) |
 | `output.diffFile` | string | `'diff.json'` | 多服务对比差异报告文件名 |
+| `output.emitDiff` | boolean | 见说明 | 是否生成差异报告;未配时默认翻译服务 > 2 个才生成 |
 | `importInfo` | object | 见下 | 构建期注入的 import 信息 |
 | `test` | RegExp \| string | `'.*(js\|jsx\|ts\|tsx\|vue)$'` | 扫描的文件扩展名 |
 | `include` | string \| string[] | `['src']` | 包含目录 |
@@ -277,6 +278,8 @@ translateService: ['baidu', 'youdao'],
 baidu: { appId: '...', appKey: '...' },
 youdao: { appId: '...', appKey: '...' },
 ```
+
+> 是否生成 `diff.json` 由 `output.emitDiff` 控制,未显式配置时默认**翻译服务 > 2 个**才生成(此时"多数一致"判断才有意义);2 个服务默认不生成,仅落盘 `suggested`。可设 `output.emitDiff: true` 强制开启。
 
 `npx i18n` 时,每个文本用所有服务并行翻译,生成 `diff.json`:
 ```json
