@@ -34,6 +34,7 @@ export const DEFAULT_CONFIG: I18nConfig = {
   batchSize: 100,
   retryTimes: 3,
   qps: 0,
+  capitalize: false,
   baidu: {
     appId: '',
     appKey: '',

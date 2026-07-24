@@ -386,18 +386,47 @@ export interface I18nConfig {
 
   /**
    * 自定义翻译函数(translateService: 'custom' 时必填)
-   *
-   * 契约:
-   * - 入参 texts:{id: 原文},原文已将换行符替换为 ✅✅ 占位
-   * - 返回:{id: 译文},key 必须与入参一一对应,缺失的 id 视为翻译失败
-   * - 译文中的 ✅✅ 会被自动还原为换行符,{{@N}} 占位符原样保留
-   * - 抛出的异常会被上层捕获并提示(多服务模式下该服务标记失败,不影响其他服务)
+   * @param texts {id: 原文},原文已将换行符替换为 ✅✅ 占位
+   * @param fromLang 源语种
+   * @param toLang 目标语种
+   * @returns {id: 译文},key 必须与入参一一对应,缺失的 id 视为翻译失败;
+   *  译文中的 ✅✅ 会被自动还原为换行符,{{@N}} 占位符原样保留;
+   *  抛出的异常会被上层捕获并提示(多服务模式下该服务标记失败,不影响其他服务)
    */
   CustomTranslate?: (
     texts: TranslateParams,
     fromLang: LngType,
     toLang: LngType,
   ) => Promise<TranslateParams>
+  /**
+   * 译文首字母大写(整条译文每行首字母大写,跳过开头占位符/数字/标点)
+   * - true:对所有目标语种生效(中日韩阿拉伯等无大小写语种为 no-op,安全)
+   * - LngType[]:只对指定语种生效,如 ['en-US']
+   * - false/不配:不处理
+   * 注意:会破坏 iPhone 等首字母小写的专有名词,需配合 formatTranslatedText 做白名单
+   * @default false
+   */
+  capitalize?: boolean | LngType[]
+  /**
+   * 译文后处理钩子(落盘前,reFormatText 还原换行/占位符之后、capitalize 之后调用)
+   * @param text 译文(reFormatText 已还原换行符、规范化占位符)
+   * @param ctx { id, fromLang, toLang, origin(原始原文) }
+   * @returns 处理后的文本(支持 Promise,便于调外部校对 API)，返回空串/undefined/void 时保留当前译文,不落空
+   * @example
+   * formatTranslatedText: (text, { toLang }) => {
+   *   if (toLang !== 'en-US') return text
+   *   return text // 白名单/自定义规则
+   * }
+   */
+  formatTranslatedText?: (
+    text: string,
+    ctx: {
+      id: string
+      fromLang: LngType
+      toLang: LngType
+      origin: string
+    },
+  ) => string | Promise<string> | void
 }
 
 export type Configuration = Omit<

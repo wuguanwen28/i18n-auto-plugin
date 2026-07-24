@@ -153,6 +153,8 @@ changeLanguage('en-US')  // 默认刷新页面,加载新语言
 | `logger` | LoggerLevel | `'info'` | 日志级别 |
 | `emitWarn` | boolean | `true` | 构建时语料库未收录文本是否告警 |
 | `translateService` | string \| string[] | `'baidu'` | 翻译服务(数组则对比模式) |
+| `capitalize` | boolean \| LngType[] | `false` | 译文每行首字母大写(跳过开头占位符/数字);`true` 全语种,数组指定语种 |
+| `formatTranslatedText` | function | - | 译文后处理钩子,落盘前调用(见[译文后处理](#译文后处理)) |
 
 **内置语种**(16 种):`zh-CN` `zh-TW` `en-US` `ja-JP` `ko-KR` `fr-FR` `de-DE` `es-ES` `ru-RU` `ar-SA` `pt-BR` `it-IT` `th-TH` `vi-VN` `nl-NL` `pl-PL`
 
@@ -232,6 +234,38 @@ CustomTranslate: async (texts, fromLang, toLang) => {
     result[id] = await myTranslate(texts[id], toLang)
   }
   return result
+}
+```
+
+## 译文后处理
+
+翻译服务返回的译文大小写可能不一致(如百度对句首字母大写,但占位符/数字开头的文本无法大写),可通过以下两个配置项统一处理。落盘前执行顺序:`reFormatText`(还原换行/占位符) -> `capitalize` -> `formatTranslatedText`。
+
+### `capitalize`(内置首字母大写)
+
+整条译文每行首字母大写(sentence case),跳过行首的占位符 `{{@N}}`、数字、标点。
+
+```js
+// 所有目标语种生效(中日韩阿拉伯等无大小写语种为 no-op,安全)
+capitalize: true
+
+// 或只对指定语种
+capitalize: ['en-US']
+```
+
+> ⚠️ 会破坏 `iPhone`、`GitHub` 等首字母小写的专有名词(如 `iPhone` -> `IPhone`)。需要保护时用下面的 `formatTranslatedText` 钩子做白名单。
+
+### `formatTranslatedText`(自定义后处理钩子)
+
+在 `capitalize` 之后调用,可覆盖其结果。入参 `(text, ctx)`,`ctx = { id, fromLang, toLang, origin }`(`origin` 为原始中文原文),返回处理后的文本(支持 `Promise`,便于调外部校对 API);返回空串/`undefined` 时保留当前译文。
+
+```js
+formatTranslatedText: (text, { toLang, origin }) => {
+  if (toLang !== 'en-US') return text
+  // 白名单:原文命中以下词时跳过大写,保护 iPhone 等
+  const keepList = ['iPhone', 'GitHub', 'iOS']
+  if (keepList.some((w) => origin.includes(w))) return text
+  return text
 }
 ```
 

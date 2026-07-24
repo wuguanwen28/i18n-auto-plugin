@@ -12,6 +12,7 @@ import {
 import { compareTranslations } from '../utils/diffComparator'
 import { writeDiffReport } from '../commands/DiffReport'
 import { sliceText } from '../utils'
+import { capitalizeFirst, shouldCapitalize } from '../utils/capitalize'
 import { logger } from '../utils/logger'
 
 export abstract class Translator {
@@ -104,7 +105,15 @@ export abstract class Translator {
               continue
             }
             this.languagesMap[id] ||= {}
-            this.languagesMap[id][toLang] = this.reFormatText(result[id])
+            this.languagesMap[id][toLang] = await this.postProcess(
+              this.reFormatText(result[id]),
+              {
+                id,
+                fromLang: originLang,
+                toLang,
+                origin: this.languagesMap[id]?.[originLang] ?? '',
+              },
+            )
 
             const f = sliceText(langMap[id])
             const t = sliceText(result[id])
@@ -181,7 +190,15 @@ export abstract class Translator {
           // 落盘语言包(suggested 非空才写)
           if (suggested) {
             this.languagesMap[id] ||= {}
-            this.languagesMap[id][toLang] = this.reFormatText(suggested)
+            this.languagesMap[id][toLang] = await this.postProcess(
+              this.reFormatText(suggested),
+              {
+                id,
+                fromLang: originLang,
+                toLang,
+                origin: this.languagesMap[id]?.[originLang] ?? '',
+              },
+            )
             logger.info(
               `翻译成功：${sliceText(langMap[id])} -> ${sliceText(suggested)}`,
             )
@@ -301,6 +318,28 @@ export abstract class Translator {
     return text
       .replace(/✅✅/g, '\n')
       .replace(/{{\@\s*([0-9]+)}}/g, (_$1, $2) => `{{@${$2}}}`)
+  }
+
+  /**
+   * 译文后处理:capitalize 内置规则 + formatTranslatedText 用户钩子
+   * 在 reFormatText 之后调用,返回最终落盘文本
+   * 顺序:reFormatText -> capitalize(语种匹配时) -> formatTranslatedText(可覆盖)
+   */
+  protected async postProcess(
+    text: string,
+    ctx: { id: string; fromLang: LngType; toLang: LngType; origin: string },
+  ): Promise<string> {
+    let result = text
+    if (shouldCapitalize(this.config.capitalize, ctx.toLang)) {
+      result = capitalizeFirst(result)
+    }
+    const hook = this.config.formatTranslatedText
+    if (typeof hook === 'function') {
+      const hooked = await hook(result, ctx)
+      // 返回非空字符串才覆盖,空串/undefined/void 时保留当前译文,避免误落空
+      if (typeof hooked === 'string' && hooked) result = hooked
+    }
+    return result
   }
 
   abstract requestTranslate(
